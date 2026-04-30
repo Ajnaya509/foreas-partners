@@ -4,19 +4,25 @@ import { GlassCard } from "./GlassCard";
 import { StatusPill } from "./StatusPill";
 import { cn, formatEUR, formatDateRelative, getInitials, type DriverStatus } from "@/lib/utils";
 import { useState } from "react";
-import { Search, Filter, MoreVertical, ArrowUpDown } from "lucide-react";
+import { Search, MoreVertical, ArrowUpDown } from "lucide-react";
 
-interface Driver {
+export interface FleetDriver {
   id: string;
   name: string;
   status: DriverStatus;
   weeklyCA: number;
   monthlyCA: number;
-  lastRideAt: Date;
+  lastRideAt: Date | null;
+  referralCode?: string;
 }
 
-// Stub data
-const STUB_DRIVERS: Driver[] = [
+interface FleetTableProps {
+  drivers: FleetDriver[];
+  onRowClick?: (driver: FleetDriver) => void;
+}
+
+// Fallback stub si aucune donnée Supabase encore (V0 demo)
+const STUB_DRIVERS: FleetDriver[] = [
   { id: "1", name: "Karim Boujemaa", status: "active", weeklyCA: 820, monthlyCA: 3280, lastRideAt: new Date(Date.now() - 1000 * 60 * 60 * 2) },
   { id: "2", name: "Mehdi Kacem", status: "warning", weeklyCA: 420, monthlyCA: 2100, lastRideAt: new Date(Date.now() - 1000 * 60 * 60 * 36) },
   { id: "3", name: "Driss Jacquet", status: "alert", weeklyCA: 0, monthlyCA: 1200, lastRideAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 28) },
@@ -36,11 +42,13 @@ const filterLabels: Record<FilterType, string> = {
   inactive: "Inactifs",
 };
 
-export function FleetTable() {
+export function FleetTable({ drivers, onRowClick }: FleetTableProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const filtered = STUB_DRIVERS.filter((d) => {
+  const dataSource = drivers && drivers.length > 0 ? drivers : STUB_DRIVERS;
+
+  const filtered = dataSource.filter((d) => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
     const matchFilter =
       filter === "all" ||
@@ -114,6 +122,7 @@ export function FleetTable() {
             {filtered.map((driver) => (
               <tr
                 key={driver.id}
+                onClick={() => onRowClick?.(driver)}
                 className="border-b border-glass-border/50 hover:bg-violet-royal/5 transition-colors cursor-pointer group"
               >
                 <td className="py-md px-md">
@@ -123,7 +132,9 @@ export function FleetTable() {
                     </div>
                     <div>
                       <div className="text-body-bold text-text-primary">{driver.name}</div>
-                      <div className="text-micro text-text-tertiary font-mono">FOREAS-{driver.id.padStart(4, "0")}</div>
+                      <div className="text-micro text-text-tertiary font-mono">
+                        {driver.referralCode ?? `FOREAS-${driver.id.slice(0, 6).toUpperCase()}`}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -145,7 +156,7 @@ export function FleetTable() {
                 </td>
                 <td className="py-md px-md">
                   <div className="text-caption text-text-tertiary">
-                    {formatDateRelative(driver.lastRideAt)}
+                    {driver.lastRideAt ? formatDateRelative(driver.lastRideAt) : "Aucune course"}
                   </div>
                 </td>
                 <td className="py-md px-md">

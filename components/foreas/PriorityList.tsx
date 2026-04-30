@@ -5,7 +5,7 @@ import { Eyebrow } from "./Eyebrow";
 import { cn, getInitials } from "@/lib/utils";
 import { ChevronRight, Clock } from "lucide-react";
 
-interface Priority {
+export interface Priority {
   id: string;
   driverName: string;
   context: string;
@@ -14,7 +14,11 @@ interface Priority {
   severity: "high" | "medium" | "low";
 }
 
-const priorities: Priority[] = [
+interface PriorityListProps {
+  priorities?: Priority[];
+}
+
+const STUB_PRIORITIES: Priority[] = [
   {
     id: "1",
     driverName: "Mehdi K.",
@@ -47,7 +51,8 @@ const severityStyles = {
   low: { dot: "bg-success", glow: "" },
 };
 
-export function PriorityList() {
+export function PriorityList({ priorities }: PriorityListProps = {}) {
+  const list = priorities && priorities.length > 0 ? priorities : STUB_PRIORITIES;
   return (
     <GlassCard className="h-full flex flex-col">
       <div className="mb-lg">
@@ -58,7 +63,7 @@ export function PriorityList() {
       </div>
 
       <div className="flex-1 space-y-md">
-        {priorities.map((priority) => {
+        {list.map((priority) => {
           const styles = severityStyles[priority.severity];
           return (
             <button

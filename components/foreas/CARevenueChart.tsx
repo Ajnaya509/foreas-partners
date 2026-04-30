@@ -3,8 +3,6 @@
 import { GlassCard } from "./GlassCard";
 import { Eyebrow } from "./Eyebrow";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -14,8 +12,17 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Stub data — 12 dernières semaines
-const data = [
+interface ChartDataPoint {
+  week: string;
+  revenue: number;
+}
+
+interface CARevenueChartProps {
+  data?: ChartDataPoint[];
+}
+
+// Stub fallback — 12 dernières semaines
+const STUB_DATA: ChartDataPoint[] = [
   { week: "S-12", revenue: 18.4 },
   { week: "S-11", revenue: 19.2 },
   { week: "S-10", revenue: 20.1 },
@@ -30,7 +37,8 @@ const data = [
   { week: "S-1", revenue: 26.5 },
 ];
 
-export function CARevenueChart() {
+export function CARevenueChart({ data: dataProp }: CARevenueChartProps = {}) {
+  const data = dataProp && dataProp.length > 0 ? dataProp : STUB_DATA;
   const total = data.reduce((acc, d) => acc + d.revenue, 0);
   const avgWeek = total / data.length;
 

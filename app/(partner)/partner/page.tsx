@@ -2,40 +2,61 @@ import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { HeroGradientCard } from "@/components/foreas/HeroGradientCard";
 import { ActionChip } from "@/components/foreas/ActionChip";
 import { StatCard } from "@/components/foreas/StatCard";
-import { GlassCard } from "@/components/foreas/GlassCard";
-import { StatusPill } from "@/components/foreas/StatusPill";
-import { Users, TrendingUp, Wallet, Activity, Phone, MessageSquare, Star, Search } from "lucide-react";
-import { FleetTable } from "@/components/foreas/FleetTable";
+import { Users, TrendingUp, Wallet, Activity, Phone, MessageSquare, Star } from "lucide-react";
+import { FleetTable, type FleetDriver } from "@/components/foreas/FleetTable";
 import { CARevenueChart } from "@/components/foreas/CARevenueChart";
 import { PriorityList } from "@/components/foreas/PriorityList";
+import {
+  getCurrentPartner,
+  getPartnerKPIs,
+  getPartnerUrgentActions,
+  getPartnerPriorities,
+  getPartnerRevenueChart,
+  getPartnerDrivers,
+} from "@/lib/queries/partner";
+import { redirect } from "next/navigation";
+import type { DriverStatus } from "@/lib/utils";
 
-export default function PartnerDashboardPage() {
-  // TODO Phase 2 : remplacer par vraies queries Supabase
-  // Stub data pour MVP design
-  const heroActions = [
-    {
-      status: "critical" as const,
-      driverName: "Driss J.",
-      context: "Inactif depuis 4 semaines",
-      cta: "Appeler",
-      icon: <Phone size={18} />,
-      pulsing: true,
-    },
-    {
-      status: "warning" as const,
-      driverName: "Karim B.",
-      context: "Score churn 87 — coaching proposé",
-      cta: "Coacher",
-      icon: <MessageSquare size={18} />,
-    },
-    {
-      status: "info" as const,
-      driverName: "Hôtel Ritz",
-      context: "Nouveau contrat à distribuer",
-      cta: "Distribuer",
-      icon: <Star size={18} />,
-    },
-  ];
+const iconMap = {
+  phone: <Phone size={18} />,
+  message: <MessageSquare size={18} />,
+  star: <Star size={18} />,
+};
+
+export default async function PartnerDashboardPage() {
+  const partner = await getCurrentPartner();
+  if (!partner) {
+    redirect("/login?next=/partner");
+  }
+
+  // Charger toutes les data en parallèle
+  const [kpis, urgentActions, priorities, chartData, drivers] = await Promise.all([
+    getPartnerKPIs(partner.id),
+    getPartnerUrgentActions(partner.id),
+    getPartnerPriorities(partner.id),
+    getPartnerRevenueChart(partner.id),
+    getPartnerDrivers(partner.id),
+  ]);
+
+  // Mapper drivers pour la FleetTable
+  const fleetDrivers: FleetDriver[] = drivers.map((d) => ({
+    id: d.id,
+    name: `${d.first_name ?? ""} ${d.last_name ?? ""}`.trim() || "Chauffeur",
+    status: d.computed_status as DriverStatus,
+    weeklyCA: d.weekly_ca,
+    monthlyCA: d.monthly_ca,
+    lastRideAt: d.last_active ? new Date(d.last_active) : null,
+    referralCode: d.referral_code ?? undefined,
+  }));
+
+  const today = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
+  const greetingName = partner.company_name?.split(" ")[0] ?? "Directeur";
 
   return (
     <div className="space-y-xl animate-fade-in-down">
@@ -43,28 +64,36 @@ export default function PartnerDashboardPage() {
       <section>
         <HeroGradientCard glow={false} className="!p-xl">
           <div className="mb-lg">
-            <Eyebrow>Aujourd'hui · 30 avril 2026</Eyebrow>
+            <Eyebrow>Aujourd&apos;hui · {today}</Eyebrow>
             <h1 className="mt-xs text-display-l font-extrabold text-text-hero">
-              Bonjour Driss.
+              Bonjour {greetingName}.
             </h1>
             <p className="mt-xs text-body-lg text-text-secondary">
-              Tu as <span className="text-violet-royal font-bold">3 actions urgentes</span> aujourd'hui.
+              {urgentActions.length > 0 ? (
+                <>
+                  Tu as <span className="text-violet-royal font-bold">{urgentActions.length} action{urgentActions.length > 1 ? "s" : ""} urgente{urgentActions.length > 1 ? "s" : ""}</span> aujourd&apos;hui.
+                </>
+              ) : (
+                <>Aucune action urgente. Profite-en pour préparer la suite.</>
+              )}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap gap-md">
-            {heroActions.map((action, i) => (
-              <ActionChip
-                key={i}
-                status={action.status}
-                driverName={action.driverName}
-                context={action.context}
-                cta={action.cta}
-                icon={action.icon}
-                pulsing={action.pulsing}
-              />
-            ))}
-          </div>
+          {urgentActions.length > 0 && (
+            <div className="flex flex-col sm:flex-row flex-wrap gap-md">
+              {urgentActions.map((action, i) => (
+                <ActionChip
+                  key={i}
+                  status={action.status}
+                  driverName={action.driverName}
+                  context={action.context}
+                  cta={action.cta}
+                  icon={iconMap[action.iconKey]}
+                  pulsing={action.pulsing}
+                />
+              ))}
+            </div>
+          )}
         </HeroGradientCard>
       </section>
 
@@ -76,42 +105,30 @@ export default function PartnerDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-lg">
           <StatCard
             label="Chauffeurs actifs"
-            value="28/30"
-            trend={3.2}
-            trendLabel="vs semaine dernière"
+            value={`${kpis.activeDrivers}/${kpis.totalDrivers}`}
             status="success"
             icon={<Users size={18} />}
-            sparkline={[15, 18, 22, 24, 25, 26, 28]}
           />
           <StatCard
             label="Rétention 30 jours"
-            value="92.3"
+            value={kpis.retention30.toFixed(1)}
             format="percent"
-            trend={1.8}
-            trendLabel="vs mois dernier"
-            status="success"
+            status={kpis.retention30 >= 85 ? "success" : kpis.retention30 >= 70 ? "warning" : "danger"}
             icon={<Activity size={18} />}
-            sparkline={[88, 89, 90, 91, 91, 92, 92.3]}
           />
           <StatCard
             label="Churn mensuel"
-            value="4.2"
+            value={kpis.churnRate.toFixed(1)}
             format="percent"
-            trend={-0.8}
-            trendLabel="vs mois dernier"
-            status="success"
+            status={kpis.churnRate < 5 ? "success" : kpis.churnRate < 10 ? "warning" : "danger"}
             icon={<TrendingUp size={18} />}
-            sparkline={[6.5, 6.0, 5.5, 5.2, 4.8, 4.5, 4.2]}
           />
           <StatCard
             label="Paie estimée ce mois"
-            value={3150}
+            value={kpis.paieEstimee}
             format="eur"
-            trend={12}
-            trendLabel="vs mois dernier"
             status="success"
             icon={<Wallet size={18} />}
-            sparkline={[1800, 2100, 2400, 2600, 2800, 3000, 3150]}
           />
         </div>
       </section>
@@ -119,10 +136,10 @@ export default function PartnerDashboardPage() {
       {/* Graph + Priorities (2 cols) */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-lg">
         <div className="lg:col-span-3">
-          <CARevenueChart />
+          <CARevenueChart data={chartData} />
         </div>
         <div className="lg:col-span-2">
-          <PriorityList />
+          <PriorityList priorities={priorities} />
         </div>
       </section>
 
@@ -132,11 +149,11 @@ export default function PartnerDashboardPage() {
           <div>
             <Eyebrow>Ma flotte</Eyebrow>
             <h2 className="mt-xxs text-h1 font-extrabold text-text-hero">
-              30 chauffeurs sous gestion
+              {kpis.totalDrivers} chauffeur{kpis.totalDrivers > 1 ? "s" : ""} sous gestion
             </h2>
           </div>
         </div>
-        <FleetTable />
+        <FleetTable drivers={fleetDrivers} />
       </section>
     </div>
   );
