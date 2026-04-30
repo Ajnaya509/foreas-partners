@@ -2,20 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0f172a;
-  --foreground: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0f172a;
-    --foreground: #ffffff;
+    --background: 11 15 30;
+    --foreground: 255 255 255;
+    --primary: 140 82 255;
+    --primary-foreground: 255 255 255;
+    --secondary: 0 212 255;
+    --secondary-foreground: 11 15 30;
+    --muted: 17 21 40;
+    --muted-foreground: 255 255 255;
+    --accent: 140 82 255;
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 255 255 255;
+    --input: 255 255 255;
+    --ring: 140 82 255;
+    --card: 17 21 40;
+    --card-foreground: 255 255 255;
+    --popover: 17 21 40;
+    --popover-foreground: 255 255 255;
+    --radius: 14px;
+  }
+
+  * {
+    @apply border-glass-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-obsidian text-text-primary antialiased;
+    background-image: linear-gradient(180deg, #0b0f1e 0%, #111528 50%, #0b0f1e 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: var(--font-geist-sans), "SF Pro Display", "Inter", system-ui, -apple-system, sans-serif;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Glass card universel — utilisé partout */
+  .glass-card {
+    @apply bg-glass-high border border-glass-border rounded-xl backdrop-blur-md;
+  }
+
+  .glass-card-elevated {
+    @apply bg-glass-high border border-glass-border-high rounded-xl backdrop-blur-xl shadow-card-elevated;
+  }
+
+  .glass-card-low {
+    @apply bg-glass-low border border-glass-border rounded-lg backdrop-blur-md;
+  }
+
+  /* Eyebrow signature FOREAS (petites étiquettes au-dessus des sections) */
+  .eyebrow {
+    @apply text-eyebrow uppercase text-violet-royal;
+  }
+
+  /* Halo pulse — pour les CTA importants (pulse violet autour du bouton) */
+  .halo-pulse {
+    @apply animate-pulse-violet;
+  }
+
+  /* Halo glow statique (pas d'animation) — survol */
+  .halo-glow {
+    @apply transition-shadow duration-300 hover:shadow-glow;
+  }
+
+  .halo-glow-cyan {
+    @apply transition-shadow duration-300 hover:shadow-glow-cyan;
+  }
+
+  /* Texte gradient signature */
+  .text-gradient-hero {
+    @apply bg-gradient-hero bg-clip-text text-transparent;
+  }
+
+  .text-gradient-royal {
+    @apply bg-gradient-royal bg-clip-text text-transparent;
+  }
+
+  /* Pulse dot — pour indicateurs "live" */
+  .pulse-dot {
+    @apply relative inline-block w-2 h-2 rounded-full bg-success;
+  }
+
+  .pulse-dot::before {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-success opacity-75 animate-ping;
+  }
+
+  /* Shimmer loading skeleton — violet/cyan, pas gris */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(140, 82, 255, 0.05) 0%,
+      rgba(140, 82, 255, 0.15) 50%,
+      rgba(140, 82, 255, 0.05) 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* Sidebar nav item style */
+  .sidebar-item {
+    @apply flex items-center gap-md px-lg py-md rounded-lg text-text-secondary hover:bg-glass-low hover:text-text-primary transition-all duration-200;
+  }
+
+  .sidebar-item-active {
+    @apply bg-violet-royal/15 text-violet-royal border border-violet-royal/25;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar custom */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(140, 82, 255, 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 82, 255, 0.5);
+  }
 }
