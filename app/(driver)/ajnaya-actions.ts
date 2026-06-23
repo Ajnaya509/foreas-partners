@@ -37,29 +37,44 @@ export async function askAjnaya(message: string, history: AjnayaTurn[] = []): Pr
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Session expirée — reconnecte-toi." };
 
-  const endpoint = process.env.AJNAYA_RESPOND_URL;
-  if (!endpoint) return { ok: false, backendPending: true };
+  // Contrat canonique Pieuvre (changelog 22:35) : POST webhook ajnaya-respond,
+  // header x-foreas-shared-secret, payload {tentacle, canal, session_id, identity_id?,
+  // message:{text}, context:{history_last_10}}, réponse reply.text.
+  const endpoint =
+    process.env.AJNAYA_RESPOND_URL ?? "https://n8n.srv1534739.hstgr.cloud/webhook/ajnaya-respond";
+  const secret = process.env.PIEUVRE_WEBHOOK_SECRET;
+  // Sans secret partagé → le webhook renvoie 401 d'office : on signale proprement.
+  if (!secret) return { ok: false, backendPending: true };
 
   try {
     const res = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-foreas-shared-secret": secret },
       cache: "no-store",
       body: JSON.stringify({
+        tentacle: "dashboard_driver",
         canal: "dashboard_driver",
-        scope: "driver_only",
-        driver_id: user.id,
-        message: clean,
-        history: history.slice(-10),
+        session_id: user.id,
+        identity_id: user.id,
+        message: { text: clean },
+        context: { history_last_10: history.slice(-10) },
       }),
     });
     if (res.status === 404 || res.status === 501) return { ok: false, backendPending: true };
+    if (res.status === 401)
+      return { ok: false, error: "Ajnaya : secret partagé manquant/invalide (PIEUVRE_WEBHOOK_SECRET sur Vercel)." };
     if (!res.ok) return { ok: false, error: `Ajnaya indisponible (${res.status}).` };
 
-    const data = (await res.json()) as { reply?: string; text?: string; message?: string; handoff_url?: string };
-    const reply = data.reply ?? data.text ?? data.message;
+    const data = (await res.json()) as {
+      reply?: { text?: string; handoff_url?: string } | string;
+      text?: string;
+      handoff_url?: string;
+    };
+    const reply = typeof data.reply === "object" ? data.reply?.text : (data.reply ?? data.text);
+    const handoffUrl =
+      (typeof data.reply === "object" ? data.reply?.handoff_url : undefined) ?? data.handoff_url;
     if (!reply) return { ok: false, error: "Réponse vide d'Ajnaya." };
-    return { ok: true, reply, handoffUrl: data.handoff_url };
+    return { ok: true, reply, handoffUrl };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau." };
   }

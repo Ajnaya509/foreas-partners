@@ -11,6 +11,7 @@ interface DiscountFormProps {
   initialMessage: string;
   initialHeroUrl: string;
   initialPromoActive: boolean;
+  initialCommission: number;
 }
 
 const DURATION_OPTIONS = [1, 3, 6, 12] as const;
@@ -22,8 +23,10 @@ export function DiscountForm({
   initialMessage,
   initialHeroUrl,
   initialPromoActive,
+  initialCommission,
 }: DiscountFormProps) {
   const [discount, setDiscount] = useState(initialDiscount);
+  const [commission, setCommission] = useState(initialCommission);
   const [duration, setDuration] = useState<number>(initialDuration);
   const [message, setMessage] = useState(initialMessage);
   const [heroUrl, setHeroUrl] = useState(initialHeroUrl);
@@ -43,6 +46,7 @@ export function DiscountForm({
           landing_message: message,
           landing_hero_url: heroUrl,
           is_promo_active: promoActive,
+          commission_rate: commission,
         });
         setStatus("ok");
       } catch (err) {
@@ -102,6 +106,29 @@ export function DiscountForm({
         <div className="flex justify-between text-micro text-text-muted mt-xs">
           <span>0%</span><span>25%</span><span>50%</span>
         </div>
+      </div>
+
+      {/* Commission override (€/mois par filleul) */}
+      <div>
+        <label className="text-body-bold text-text-primary block mb-sm">
+          Commission par filleul
+          <span className="ml-xs text-caption text-text-muted font-normal">(€ / mois)</span>
+        </label>
+        <div className="relative">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={commission}
+            onChange={(e) => setCommission(Number(e.target.value))}
+            className="w-full px-md py-sm pr-10 rounded-lg bg-glass-low border border-glass-border text-body text-text-primary tabular-nums placeholder:text-text-muted focus:outline-none focus:border-cyan-electric/50 transition-colors"
+          />
+          <span className="absolute right-md top-1/2 -translate-y-1/2 text-text-muted text-body-bold">€</span>
+        </div>
+        <p className="mt-xs text-micro text-text-muted">
+          Valeur forcée par l&apos;admin (se répercute sur les versements Stripe). Par défaut, paliers
+          auto 25 / 35 / 50 € selon le nombre de chauffeurs actifs amenés — comme le parrainage chauffeur.
+        </p>
       </div>
 
       {/* Durée remise */}

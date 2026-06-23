@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/railway";
 import { getInitials, formatEUR, formatDateRelative } from "@/lib/utils";
 import { DiscountForm } from "./DiscountForm";
+import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
 function CommissionLevelBadge({ level }: { level: 1 | 2 | 3 }) {
@@ -79,6 +80,15 @@ export default async function AdminPartnerFichePage({
   const pendingComm = commissions
     .filter((c) => c.status === "pending")
     .reduce((acc, c) => acc + (c.amount ?? 0), 0);
+
+  // Commission actuelle (Railway ne la renvoie pas) — lue via Supabase admin RLS.
+  const supabaseAdmin = await createClient();
+  const { data: partnerRow } = await supabaseAdmin
+    .from("partners")
+    .select("commission_rate")
+    .eq("id", id)
+    .maybeSingle();
+  const commissionRate = Number((partnerRow as { commission_rate?: number } | null)?.commission_rate ?? 0);
 
   return (
     <div className="space-y-xl animate-fade-in-down">
@@ -173,6 +183,7 @@ export default async function AdminPartnerFichePage({
               initialMessage={partner.landing_message ?? ""}
               initialHeroUrl={partner.landing_hero_url ?? ""}
               initialPromoActive={partner.is_promo_active ?? false}
+              initialCommission={commissionRate}
             />
           </GlassCard>
 
