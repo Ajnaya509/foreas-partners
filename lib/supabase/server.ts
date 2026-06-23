@@ -6,7 +6,11 @@ import { cookies } from "next/headers";
  * Server Actions, et Route Handlers.
  *
  * Auth state lu depuis les cookies du request, synchronisé via Set-Cookie.
+ * NEXT_PUBLIC_COOKIE_DOMAIN=.foreas.xyz en prod → session cross-subdomain.
  */
+
+const COOKIE_DOMAIN = process.env.NEXT_PUBLIC_COOKIE_DOMAIN || undefined;
+
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -21,7 +25,10 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+              })
             );
           } catch {
             // Server Component context — silently ignore.

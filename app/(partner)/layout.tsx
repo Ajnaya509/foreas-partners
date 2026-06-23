@@ -12,7 +12,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/partner");
+    redirect("/login?role=partner&next=/partner");
   }
 
   // Try to fetch partner profile (graceful fallback if not yet created)

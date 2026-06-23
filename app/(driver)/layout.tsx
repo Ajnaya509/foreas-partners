@@ -1,5 +1,6 @@
 import { DriverSidebar } from "@/components/foreas/DriverSidebar";
 import { TopBar } from "@/components/foreas/TopBar";
+import { AjnayaDriverChat } from "@/components/foreas/AjnayaDriverChat";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -8,7 +9,7 @@ export default async function DriverLayout({ children }: { children: React.React
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/driver");
+  if (!user) redirect("/login?role=driver&next=/driver");
 
   const { data: driver } = await supabase
     .from("drivers")
@@ -28,6 +29,8 @@ export default async function DriverLayout({ children }: { children: React.React
         <TopBar partnerName={driverName} notificationsCount={0} />
         <main className="flex-1 px-lg lg:px-xl py-lg lg:py-xl">{children}</main>
       </div>
+      {/* Porte Ajnaya — copilote chauffeur (scope strict : courses/gains/zones/parrainage) */}
+      <AjnayaDriverChat driverName={driverName} />
     </div>
   );
 }

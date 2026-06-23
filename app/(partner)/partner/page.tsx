@@ -6,6 +6,7 @@ import { Users, TrendingUp, Wallet, Activity, Phone, MessageSquare, Star } from 
 import { FleetTable, type FleetDriver } from "@/components/foreas/FleetTable";
 import { CARevenueChart } from "@/components/foreas/CARevenueChart";
 import { PriorityList } from "@/components/foreas/PriorityList";
+import { StripeConnectBanner } from "./StripeConnectBanner";
 import {
   getCurrentPartner,
   getPartnerKPIs,
@@ -14,6 +15,7 @@ import {
   getPartnerRevenueChart,
   getPartnerDrivers,
 } from "@/lib/queries/partner";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { DriverStatus } from "@/lib/utils";
 
@@ -28,6 +30,20 @@ export default async function PartnerDashboardPage() {
   if (!partner) {
     redirect("/login?next=/partner");
   }
+
+  // Récupère le prénom du user pour le greeting (pas le nom de la société)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const fullName = (user?.user_metadata?.full_name as string | undefined)
+    ?? (user?.user_metadata?.name as string | undefined)
+    ?? null;
+  const firstName =
+    fullName?.split(" ")[0]
+    ?? user?.email?.split("@")[0]?.split(".")[0]
+    ?? "Directeur";
+  const greetingName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
   // Charger toutes les data en parallèle
   const [kpis, urgentActions, priorities, chartData, drivers] = await Promise.all([
@@ -56,10 +72,14 @@ export default async function PartnerDashboardPage() {
     year: "numeric",
   }).format(new Date());
 
-  const greetingName = partner.company_name?.split(" ")[0] ?? "Directeur";
-
   return (
     <div className="space-y-xl animate-fade-in-down">
+      {/* Paiement — bandeau Stripe Connect (masqué si déjà connecté) */}
+      <StripeConnectBanner
+        connected={!!partner.stripe_account_id}
+        pendingCommission={Number(partner.pending_commission ?? 0)}
+      />
+
       {/* Hero — Bonjour + 3 actions urgentes */}
       <section>
         <HeroGradientCard glow={false} className="!p-xl">

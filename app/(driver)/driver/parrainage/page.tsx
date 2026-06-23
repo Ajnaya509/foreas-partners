@@ -103,7 +103,7 @@ export default async function DriverParrainagePage() {
           </div>
         </div>
         <p className="mt-md text-caption text-text-tertiary">
-          Éligibilité : 30 jours d&apos;activité du filleul minimum. Commissions versées chaque mois.
+          Éligibilité : 4 paiements hebdo consécutifs sans annulation. Commissions versées chaque mois.
         </p>
       </GlassCard>
     </div>

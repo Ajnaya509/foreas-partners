@@ -116,6 +116,72 @@ export async function getPieuvreWorkflowHealth() {
   return data ?? [];
 }
 
+export async function getAcquisitionFunnelData() {
+  const supabase = await createClient();
+  const eightWeeksAgo = new Date(Date.now() - 56 * 24 * 60 * 60 * 1000);
+
+  const { data: drivers } = await supabase
+    .from("drivers")
+    .select("created_at, status")
+    .gte("created_at", eightWeeksAgo.toISOString())
+    .order("created_at", { ascending: true });
+
+  const { data: partners } = await supabase
+    .from("partners")
+    .select("created_at, status")
+    .gte("created_at", eightWeeksAgo.toISOString())
+    .order("created_at", { ascending: true });
+
+  const weekMap = new Map<number, { drivers: number; partners: number }>();
+  const toMonday = (d: Date) => {
+    const m = new Date(d);
+    m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    m.setHours(0, 0, 0, 0);
+    return m.getTime();
+  };
+
+  (drivers ?? []).forEach((d) => {
+    if (!d.created_at) return;
+    const key = toMonday(new Date(d.created_at));
+    const cur = weekMap.get(key) ?? { drivers: 0, partners: 0 };
+    cur.drivers += 1;
+    weekMap.set(key, cur);
+  });
+
+  (partners ?? []).forEach((p) => {
+    if (!p.created_at) return;
+    const key = toMonday(new Date(p.created_at));
+    const cur = weekMap.get(key) ?? { drivers: 0, partners: 0 };
+    cur.partners += 1;
+    weekMap.set(key, cur);
+  });
+
+  const result = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i * 7);
+    const key = toMonday(d);
+    const v = weekMap.get(key) ?? { drivers: 0, partners: 0 };
+    result.push({
+      weekLabel: new Date(key).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      drivers: v.drivers,
+      partners: v.partners,
+    });
+  }
+
+  return result;
+}
+
+export async function getUserRolesList(limit = 100) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_roles")
+    .select("id, user_id, role, is_active, granted_at, revoked_at")
+    .order("granted_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
 export async function getActiveFeatureFlags() {
   const supabase = await createClient();
   const { data } = await supabase

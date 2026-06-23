@@ -115,6 +115,11 @@
   .sidebar-item-active {
     @apply bg-violet-royal/15 text-violet-royal border border-violet-royal/25;
   }
+
+  /* Admin console — variant cyan actif */
+  .sidebar-item-active-admin {
+    @apply bg-cyan-electric/10 text-cyan-electric border border-cyan-electric/20;
+  }
 }
 
 @layer utilities {

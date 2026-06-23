@@ -9,11 +9,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/login?role=admin&next=/admin");
 
   const isAdmin = await isCurrentUserAdmin();
   if (!isAdmin) {
-    // Pas admin : redirect vers /partner ou /driver
+    // Connecté mais pas admin → soft redirect vers son espace légitime
     const { data: partner } = await supabase
       .from("partners")
       .select("id")

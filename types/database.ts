@@ -57,6 +57,12 @@ export type PartnerRow = {
   active_drivers: number | null;
   pending_commission: number | null;
   total_earned: number | null;
+  // MLM fields (STRIPE_MLM_CROSSFIL_MASTER v2026-05-02)
+  discount_percent_for_recruits: number | null;
+  discount_duration_months: number | null;
+  landing_message: string | null;
+  landing_hero_url: string | null;
+  is_promo_active: boolean | null;
   created_at: string;
 };
 

@@ -14,6 +14,8 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { ForeasLogo } from "@/components/foreas/ForeasLogo";
+import { ForeasDivider } from "@/components/foreas/ForeasDivider";
 
 interface NavItem {
   href: string;
@@ -48,14 +50,10 @@ export function Sidebar({ partnerCode = "PARIS18-DJ", partnerName = "Driss J." }
   return (
     <aside className="hidden lg:flex flex-col w-64 h-screen bg-obsidian-deep border-r border-glass-border sticky top-0 shrink-0">
       {/* Logo */}
-      <div className="px-xl py-xxl">
-        <div className="flex items-baseline gap-xs">
-          <span className="text-h1 font-extrabold text-text-hero tracking-tight">FOREAS</span>
-          <span className="text-h3 font-light text-violet-royal">/</span>
-        </div>
-        <div className="mt-xs">
-          <span className="eyebrow">Espace Directeur</span>
-        </div>
+      <div className="px-xl pt-xxl pb-md">
+        <ForeasLogo variant="full" color="#F8FAFC" height={22} />
+        <ForeasDivider className="mt-sm mb-xs" opacity={0.45} />
+        <span className="eyebrow">Espace Directeur</span>
       </div>
 
       {/* Partner identity */}
