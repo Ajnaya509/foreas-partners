@@ -1,16 +1,21 @@
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { GlassCard } from "@/components/foreas/GlassCard";
 import { HeroGradientCard } from "@/components/foreas/HeroGradientCard";
-import { Copy, QrCode, MessageSquare, TrendingUp, Users, Share2 } from "lucide-react";
+import { MessageSquare, TrendingUp, Users } from "lucide-react";
 import { getCurrentPartner } from "@/lib/queries/partner";
 import { redirect } from "next/navigation";
 import { StatCard } from "@/components/foreas/StatCard";
+import { CopyLinkButton } from "./CopyLinkButton";
 
 export default async function PartnerRecrutementPage() {
   const partner = await getCurrentPartner();
   if (!partner) redirect("/login?next=/partner/recrutement");
 
-  const referralLink = `https://foreas.xyz/p/${partner.referral_code.toLowerCase()}`;
+  // Seule landing partenaire qui EXISTE sur le site : /cap?ref=CODE
+  // (/p/<code> était un 404 — aucune route /p ni redirect côté foreas-website).
+  // Majuscules car /cap normalise le code en .toUpperCase().
+  const code = (partner.referral_code ?? "").trim().toUpperCase();
+  const referralLink = `https://foreas.xyz/cap?ref=${code}`;
 
   return (
     <div className="space-y-xl animate-fade-in-down">
@@ -26,43 +31,34 @@ export default async function PartnerRecrutementPage() {
 
       {/* Mon code parrainage hero */}
       <HeroGradientCard>
-        <div className="flex flex-col lg:flex-row gap-xl items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-xs">
-              <Eyebrow>Mon code parrainage</Eyebrow>
-            </div>
-            <div className="mt-xs flex items-baseline gap-md">
-              <span className="text-display-xl font-extrabold tracking-tight text-text-hero font-mono">
-                {partner.referral_code}
-              </span>
-            </div>
+        <div className="flex items-center gap-xs">
+          <Eyebrow>Mon code parrainage</Eyebrow>
+        </div>
+        <div className="mt-xs flex items-baseline gap-md">
+          <span className="text-display-xl font-extrabold tracking-tight text-text-hero font-mono">
+            {partner.referral_code}
+          </span>
+        </div>
+        {code ? (
+          <>
             <p className="mt-md text-body text-text-secondary">
               Partage cette URL avec tes prospects chauffeurs. Chaque inscription
               via ton code génère <span className="text-violet-royal font-bold">25€/sem</span> de commission.
             </p>
             <div className="mt-lg flex flex-wrap gap-sm">
-              <button className="flex items-center gap-xs px-md py-sm rounded-lg bg-violet-royal/15 border border-violet-royal/40 text-violet-royal hover:bg-violet-royal/25 transition-colors">
-                <Copy size={14} />
-                <span className="text-caption font-semibold">Copier le lien</span>
-              </button>
-              <button className="flex items-center gap-xs px-md py-sm rounded-lg bg-glass-low border border-glass-border text-text-secondary hover:text-text-primary transition-colors">
-                <QrCode size={14} />
-                <span className="text-caption font-semibold">QR code</span>
-              </button>
-              <button className="flex items-center gap-xs px-md py-sm rounded-lg bg-glass-low border border-glass-border text-text-secondary hover:text-text-primary transition-colors">
-                <Share2 size={14} />
-                <span className="text-caption font-semibold">Partager WhatsApp</span>
-              </button>
+              {/* Boutons QR et WhatsApp retirés : rien derrière — un bouton mort est un mensonge. */}
+              <CopyLinkButton link={referralLink} />
             </div>
             <div className="mt-md p-md rounded-lg bg-obsidian-deep/60 border border-glass-border font-mono text-caption text-text-tertiary break-all">
               {referralLink}
             </div>
-          </div>
-          <div className="hidden lg:flex flex-col items-center justify-center w-48 h-48 rounded-xl bg-glass-low border border-glass-border">
-            <QrCode size={120} className="text-violet-royal/60" />
-            <span className="mt-xs text-caption text-text-tertiary">QR code</span>
-          </div>
-        </div>
+          </>
+        ) : (
+          <p className="mt-md text-body text-warning">
+            Ton code parrainage n&apos;est pas encore généré — contacte le
+            support avant de partager quoi que ce soit.
+          </p>
+        )}
       </HeroGradientCard>
 
       {/* KPI parrainage */}
@@ -106,10 +102,11 @@ export default async function PartnerRecrutementPage() {
         <div className="mt-lg p-xl rounded-lg border border-dashed border-violet-royal/30 bg-violet-royal/5">
           <div className="text-center">
             <p className="text-body-bold text-violet-royal">
-              🚀 Module Lead Generator en cours d&apos;activation
+              Lead Generator — pas encore disponible
             </p>
             <p className="mt-xs text-caption text-text-tertiary">
-              Disponible Q3 2026 — premier batch de leads scrapés en cours sur Paris/Île-de-France
+              Aucun lead n&apos;est encore livré dans ton espace. On te
+              préviendra ici dès l&apos;ouverture.
             </p>
           </div>
         </div>

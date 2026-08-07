@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { validatePartner, refusePartner } from "./actions";
-import { CheckCircle, XCircle, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { validatePartner, pausePartner } from "./actions";
+import { CheckCircle, PauseCircle, Loader2, AlertCircle } from "lucide-react";
 
 interface ApproveActionsProps {
   partnerId: string;
@@ -10,17 +10,22 @@ interface ApproveActionsProps {
 }
 
 export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) {
-  const [status, setStatus] = useState<"idle" | "approved" | "refused" | "error">("idle");
-  const [onboardingUrl, setOnboardingUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "approved" | "paused" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  // Truthful UX : le message vert n'apparaît qu'après un update RÉEL en base
+  // (res.ok) — un échec RLS ou un id inconnu s'affiche en erreur, pas en succès.
   const handleApprove = () => {
     startTransition(async () => {
       try {
         const res = await validatePartner(partnerId);
-        setStatus("approved");
-        if (res.onboardingUrl) setOnboardingUrl(res.onboardingUrl);
+        if (res.ok) {
+          setStatus("approved");
+        } else {
+          setErrorMsg(res.error ?? "Erreur inconnue");
+          setStatus("error");
+        }
       } catch (e) {
         setErrorMsg(e instanceof Error ? e.message : "Erreur inconnue");
         setStatus("error");
@@ -28,11 +33,16 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
     });
   };
 
-  const handleRefuse = () => {
+  const handlePause = () => {
     startTransition(async () => {
       try {
-        await refusePartner(partnerId);
-        setStatus("refused");
+        const res = await pausePartner(partnerId);
+        if (res.ok) {
+          setStatus("paused");
+        } else {
+          setErrorMsg(res.error ?? "Erreur inconnue");
+          setStatus("error");
+        }
       } catch (e) {
         setErrorMsg(e instanceof Error ? e.message : "Erreur inconnue");
         setStatus("error");
@@ -45,37 +55,38 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
       <div className="flex flex-col gap-sm">
         <div className="flex items-center gap-xs text-success text-body-bold">
           <CheckCircle size={18} />
-          {companyName} validé !
+          {companyName} validé — statut actif.
         </div>
-        {onboardingUrl && (
-          <a
-            href={onboardingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-success/10 border border-success/25 text-success text-caption font-bold hover:bg-success/20 transition-colors"
-          >
-            <ExternalLink size={14} />
-            Ouvrir lien Stripe Connect onboarding
-          </a>
-        )}
+        <p className="text-caption text-text-tertiary">
+          Le partenaire génère son lien Stripe Connect depuis son espace.
+        </p>
       </div>
     );
   }
 
-  if (status === "refused") {
+  if (status === "paused") {
     return (
       <div className="flex items-center gap-xs text-danger text-body-bold">
-        <XCircle size={18} />
-        {companyName} refusé.
+        <PauseCircle size={18} />
+        {companyName} mis en pause.
       </div>
     );
   }
 
   if (status === "error") {
+    // Un échec ne doit pas être un cul-de-sac : on remet les boutons en jeu.
     return (
-      <div className="flex items-start gap-xs text-danger text-caption">
-        <AlertCircle size={16} className="shrink-0 mt-xxs" />
-        <span>{errorMsg}</span>
+      <div className="flex flex-col gap-sm">
+        <div className="flex items-start gap-xs text-danger text-caption">
+          <AlertCircle size={16} className="shrink-0 mt-xxs" />
+          <span>{errorMsg}</span>
+        </div>
+        <button
+          onClick={() => { setErrorMsg(""); setStatus("idle"); }}
+          className="self-start px-md py-xxs rounded-lg border border-glass-border text-caption font-bold text-text-secondary hover:text-text-primary transition-colors"
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -95,12 +106,12 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
         Valider
       </button>
       <button
-        onClick={handleRefuse}
+        onClick={handlePause}
         disabled={isPending}
         className="inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-danger/10 border border-danger/25 text-danger text-caption font-bold hover:bg-danger/20 transition-colors disabled:opacity-50"
       >
-        <XCircle size={14} />
-        Refuser
+        <PauseCircle size={14} />
+        Mettre en pause
       </button>
     </div>
   );

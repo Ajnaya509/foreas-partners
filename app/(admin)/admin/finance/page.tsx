@@ -33,8 +33,9 @@ export default async function AdminFinancePage() {
       <header>
         <Eyebrow>Console Admin</Eyebrow>
         <h1 className="mt-xxs text-display-l font-extrabold text-text-hero">Finance</h1>
+        {/* « estimé » partout : le chiffre sort d'une constante (admin.ts), pas de Stripe. */}
         <p className="mt-xs text-body-lg text-text-secondary">
-          MRR live, commissions partenaires, paiements Stripe.
+          MRR estimé, commissions partenaires, paiements Stripe.
         </p>
       </header>
 

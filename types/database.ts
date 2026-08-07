@@ -11,6 +11,7 @@ export type DriverRow = {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
+  email: string | null;
   vtc_card_number: string | null;
   vtc_card_expiry: string | null;
   vtc_card_url: string | null;

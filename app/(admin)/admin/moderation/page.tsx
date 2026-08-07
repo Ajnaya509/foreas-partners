@@ -13,20 +13,23 @@ import {
   Eye,
 } from "lucide-react";
 import { getRecentDriversAdmin } from "@/lib/queries/admin";
+import type { DriverRow } from "@/types/database";
 
-type Driver = {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  vtc_card_verified: boolean | null;
-  created_at: string | null;
-};
+/**
+ * Identité lisible pour l'admin : prénom + nom (colonnes réelles de `drivers` —
+ * seul full_name n'existe pas dans cette table, email EXISTE — introspection
+ * live 07/08), sinon téléphone, sinon email, sinon le numéro de carte VTC
+ * (précisément la pièce qu'on valide sur cet écran), sinon repère court.
+ * Plus jamais d'UUID brut face à une carte VTC à valider.
+ */
+function driverIdentity(d: DriverRow): string {
+  const name = [d.first_name, d.last_name].filter(Boolean).join(" ").trim();
+  return name || d.phone || d.email || (d.vtc_card_number ? `Carte ${d.vtc_card_number}` : `Chauffeur ${d.id.slice(0, 8)}`);
+}
 
 export default async function AdminModerationPage() {
   const driversRaw = await getRecentDriversAdmin(50);
-  const drivers = (driversRaw as Driver[]) ?? [];
+  const drivers = (driversRaw as DriverRow[]) ?? [];
 
   const pendingVerif = drivers.filter((d) => !d.vtc_card_verified);
   const suspended = drivers.filter((d) => d.status === "suspended" || d.status === "banned");
@@ -71,13 +74,13 @@ export default async function AdminModerationPage() {
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-lg">
         <StatCard
-          label="Cartes VTC à vérifier"
+          label="Cartes VTC à vérifier (50 derniers inscrits)"
           value={pendingVerif.length}
           icon={<FileCheck size={18} />}
           status={pendingVerif.length > 5 ? "warning" : pendingVerif.length > 0 ? "warning" : "success"}
         />
         <StatCard
-          label="Comptes suspendus"
+          label="Comptes suspendus (50 derniers inscrits)"
           value={suspended.length}
           icon={<AlertTriangle size={18} />}
           status={suspended.length > 0 ? "danger" : "success"}
@@ -89,7 +92,7 @@ export default async function AdminModerationPage() {
           status="neutral"
         />
         <StatCard
-          label="Cartes VTC validées"
+          label="Cartes VTC validées (50 derniers inscrits)"
           value={verified.length}
           icon={<CheckCircle2 size={18} />}
           status="success"
@@ -143,7 +146,7 @@ export default async function AdminModerationPage() {
                   <Car size={14} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-caption font-bold text-text-primary truncate">{d.full_name ?? d.email ?? d.id.slice(0, 8)}</div>
+                  <div className="text-caption font-bold text-text-primary truncate">{driverIdentity(d)}</div>
                   {d.created_at && (
                     <div className="flex items-center gap-xs mt-xxs text-micro text-text-tertiary">
                       <Clock size={10} />
@@ -183,7 +186,7 @@ export default async function AdminModerationPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-caption font-bold text-text-primary truncate">
-                    {d.full_name ?? d.email ?? d.id.slice(0, 8)}
+                    {driverIdentity(d)}
                   </div>
                   <div className="text-micro text-danger mt-xxs font-semibold uppercase tracking-wide">
                     {statusLabel(d.status)}
@@ -218,7 +221,7 @@ export default async function AdminModerationPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-caption font-bold text-text-primary truncate">
-                    {d.full_name ?? d.email ?? d.id.slice(0, 12)}
+                    {driverIdentity(d)}
                   </div>
                   <div className="flex items-center gap-md mt-xxs">
                     {d.created_at && (

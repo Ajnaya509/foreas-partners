@@ -28,7 +28,7 @@ export default async function AdminOverviewPage() {
           Bonjour Chandler.
         </h1>
         <p className="mt-xs text-body-lg text-text-secondary">
-          Vue consolidée FOREAS Holding · {kpis.totalDrivers} chauffeurs · {kpis.totalPartners} partenaires · MRR {kpis.mrrEstimated.toFixed(0)}€
+          Vue consolidée FOREAS Holding · {kpis.totalDrivers} chauffeurs · {kpis.totalPartners} partenaires · MRR estimé {kpis.mrrEstimated.toFixed(0)}€
         </p>
       </HeroGradientCard>
 
@@ -42,7 +42,8 @@ export default async function AdminOverviewPage() {
           <StatCard label="Courses jour" value={kpis.ridesToday} status="neutral" icon={<Activity size={18} />} />
           <StatCard label="Drivers actifs" value={kpis.activeDrivers} status="success" icon={<Users size={18} />} />
           <StatCard label="Prospects 7j" value={kpis.prospects7d} status="neutral" icon={<TrendingUp size={18} />} />
-          <StatCard label="MRR live" value={kpis.mrrEstimated} format="eur" status="success" icon={<TrendingUp size={18} />} />
+          {/* « estimé » : subs actives × constante (admin.ts) — pas un chiffre Stripe mesuré. */}
+          <StatCard label="MRR estimé" value={kpis.mrrEstimated} format="eur" status="success" icon={<TrendingUp size={18} />} />
         </div>
       </section>
 

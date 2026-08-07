@@ -59,13 +59,15 @@ export async function getAdminGlobalKPIs() {
   const revenueToday = ((ridesData ?? []) as { fare_amount: number | null; driver_earnings: number | null }[])
     .reduce((acc, r) => acc + Number(r.fare_amount ?? r.driver_earnings ?? 0), 0);
 
-  // MRR estimé (subscriptions actives × 12.97 × 4)
+  // MRR estimé = subscriptions actives × 29,99 € (prix unique mensuel,
+  // cf. FOREAS-Clean/src/config/pricing.ts:28) ; ignore l'annuel 249,99 €
+  // et les remises partenaire
   const { count: activeSubs } = await supabase
     .from("subscriptions")
     .select("id", { count: "exact", head: true })
     .eq("status", "active");
 
-  const mrrEstimated = (activeSubs ?? 0) * 12.97 * 4;
+  const mrrEstimated = (activeSubs ?? 0) * 29.99;
 
   // Prospects 7j (driver_signals ou b2b prospects)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

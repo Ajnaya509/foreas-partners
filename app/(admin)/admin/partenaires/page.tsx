@@ -6,6 +6,26 @@ import { getRecentPartnersAdmin } from "@/lib/queries/admin";
 import { formatEUR, formatDateRelative, getInitials } from "@/lib/utils";
 import type { PartnerRow } from "@/types/database";
 
+/**
+ * Statut partenaire en français, avec 3 familles de couleur :
+ * actif = vert, en attente = orange, pause/suspendu/rejeté = rouge.
+ * Avant : {p.status} brut, en anglais, et tout non-actif en orange —
+ * un partenaire suspendu était visuellement identique à un partenaire en attente.
+ */
+function statusBadge(status: string): { label: string; cls: string } {
+  const map: Record<string, { label: string; cls: string }> = {
+    active: { label: "Actif", cls: "bg-success/10 text-success border-success/30" },
+    pending: { label: "En attente", cls: "bg-warning/10 text-warning border-warning/30" },
+    // Tolérance défensive — jamais observé en base (statuts réels : pending/active/paused).
+    pending_approval: { label: "En attente", cls: "bg-warning/10 text-warning border-warning/30" },
+    paused: { label: "En pause", cls: "bg-danger/10 text-danger border-danger/30" },
+    suspended: { label: "Suspendu", cls: "bg-danger/10 text-danger border-danger/30" },
+    rejected: { label: "Refusé", cls: "bg-danger/10 text-danger border-danger/30" },
+  };
+  // Statut inconnu : on l'affiche tel quel en neutre — ne jamais maquiller une valeur imprévue.
+  return map[status] ?? { label: status, cls: "bg-glass-low text-text-secondary border-glass-border" };
+}
+
 export default async function AdminPartenairesPage() {
   const partners = (await getRecentPartnersAdmin(100)) as PartnerRow[];
   const total = partners.length;
@@ -29,7 +49,8 @@ export default async function AdminPartenairesPage() {
         <StatCard label="Total partenaires" value={total} icon={<Handshake size={18} />} />
         <StatCard label="Actifs" value={active} icon={<UserCheck size={18} />} status="success" />
         <StatCard label="Chauffeurs sous gestion" value={totalDrivers} icon={<Briefcase size={18} />} status="neutral" />
-        <StatCard label="Commissions versées" value={totalEarned} format="eur" icon={<Wallet size={18} />} status="success" />
+        {/* total_earned = cumul GAGNÉ, pas le versé (« versé » = status 'paid', vu sur /admin/finance). */}
+        <StatCard label="Total gagné (cumul)" value={totalEarned} format="eur" icon={<Wallet size={18} />} status="success" />
       </section>
 
       <GlassCard>
@@ -46,7 +67,9 @@ export default async function AdminPartenairesPage() {
               </tr>
             </thead>
             <tbody>
-              {partners.map((p) => (
+              {partners.map((p) => {
+                const badge = statusBadge(p.status);
+                return (
                 <tr key={p.id} className="border-b border-glass-border/50 hover:bg-violet-royal/5 transition-colors">
                   <td className="py-md px-md">
                     <div className="flex items-center gap-md">
@@ -64,13 +87,9 @@ export default async function AdminPartenairesPage() {
                   </td>
                   <td className="py-md px-md">
                     <span
-                      className={`inline-flex items-center gap-xs px-sm py-xxs rounded-pill text-caption font-semibold border ${
-                        p.status === "active"
-                          ? "bg-success/10 text-success border-success/30"
-                          : "bg-warning/10 text-warning border-warning/30"
-                      }`}
+                      className={`inline-flex items-center gap-xs px-sm py-xxs rounded-pill text-caption font-semibold border ${badge.cls}`}
                     >
-                      {p.status}
+                      {badge.label}
                     </span>
                   </td>
                   <td className="py-md px-md text-right text-body-bold tabular-nums text-text-primary">
@@ -83,7 +102,8 @@ export default async function AdminPartenairesPage() {
                     {p.created_at ? formatDateRelative(p.created_at) : "—"}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {partners.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-huge text-center text-text-tertiary">

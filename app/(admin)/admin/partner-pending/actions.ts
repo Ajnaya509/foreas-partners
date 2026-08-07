@@ -1,30 +1,64 @@
 "use server";
 
-import { railwayPatch, railwayPost } from "@/lib/api/railway";
+import { railwayPost } from "@/lib/api/railway";
 import { isCurrentUserAdmin } from "@/lib/queries/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function validatePartner(partnerId: string): Promise<{ ok: boolean; onboardingUrl?: string }> {
+/**
+ * Changer le statut d'un partner déjà en base — update Supabase DIRECT.
+ * Pourquoi pas Railway : la route PATCH /api/admin/partners/:id/status
+ * n'a jamais existé côté backend, les boutons appelaient du vide.
+ * Le pattern du repo (cf. rejectApplication) est l'update direct sous RLS admin.
+ * Truthful UX : on exige la ligne modifiée en retour (.select) — un update qui
+ * ne touche aucune ligne (RLS, id inconnu) est un échec, pas un succès.
+ */
+async function setPartnerStatus(
+  partnerId: string,
+  status: "active" | "paused"
+): Promise<{ ok: boolean; error?: string }> {
   const isAdmin = await isCurrentUserAdmin();
   if (!isAdmin) throw new Error("Not authorized");
 
-  const res = await railwayPatch<{ ok: boolean; onboarding_url?: string }>(
-    `/api/admin/partners/${partnerId}/status`,
-    { status: "active" }
-  );
+  const supabase = await createClient();
+  const patch: { status: string; approved_at?: string } = { status };
+  // approved_at trace la date de validation humaine — uniquement à l'activation.
+  if (status === "active") patch.approved_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("partners")
+    .update(patch)
+    .eq("id", partnerId)
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Aucune ligne modifiée (partenaire introuvable ou droits insuffisants)." };
+  }
+
   revalidatePath("/admin/partner-pending");
   revalidatePath("/admin/partners");
-  return { ok: res.ok, onboardingUrl: res.onboarding_url };
+  revalidatePath("/admin/partenaires");
+  return { ok: true };
 }
 
-export async function refusePartner(partnerId: string): Promise<void> {
-  const isAdmin = await isCurrentUserAdmin();
-  if (!isAdmin) throw new Error("Not authorized");
+/**
+ * Passer un partner 'pending' en 'active'. Nécessaire pour que le cron MLM
+ * le considère comme sponsor (findSponsor exige status 'active').
+ * Le lien Stripe Connect n'est PAS créé ici : le partenaire le génère
+ * depuis son espace (StripeConnectBanner → Railway) — on ne promet donc rien.
+ */
+export async function validatePartner(partnerId: string): Promise<{ ok: boolean; error?: string }> {
+  return setPartnerStatus(partnerId, "active");
+}
 
-  await railwayPatch(`/api/admin/partners/${partnerId}/status`, { status: "paused" });
-  revalidatePath("/admin/partner-pending");
-  revalidatePath("/admin/partners");
+/**
+ * Mettre un partner en pause. Le statut réellement écrit est 'paused'
+ * (seuls pending/active/paused existent dans ce repo) — le libellé UI
+ * dit la même chose, plus de bouton « Refuser » qui écrit autre chose.
+ */
+export async function pausePartner(partnerId: string): Promise<{ ok: boolean; error?: string }> {
+  return setPartnerStatus(partnerId, "paused");
 }
 
 // ─── Candidatures site (table partner_applications) ─────────────────────────────

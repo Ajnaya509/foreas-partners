@@ -28,8 +28,8 @@ const COMPANY_TYPE_LABEL: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const cfg = {
     active:  { label: "Actif",   cls: "bg-success/10 text-success border-success/25" },
-    pending: { label: "Pending", cls: "bg-warning/10 text-warning border-warning/25" },
-    paused:  { label: "Pausé",   cls: "bg-danger/10 text-danger border-danger/25" },
+    pending: { label: "En attente", cls: "bg-warning/10 text-warning border-warning/25" },
+    paused:  { label: "En pause",   cls: "bg-danger/10 text-danger border-danger/25" },
   }[status] ?? { label: status, cls: "bg-glass-low text-text-tertiary border-glass-border" };
   return (
     <span className={`inline-flex items-center px-sm py-xxs rounded-pill text-caption font-semibold border ${cfg.cls}`}>
@@ -130,9 +130,9 @@ export default async function AdminPartnersMLMPage({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-lg">
-        <StatCard label="Total partners" value={total} icon={<Network size={18} />} status="neutral" />
+        <StatCard label="Total partenaires" value={total} icon={<Network size={18} />} status="neutral" />
         <StatCard label="Actifs" value={active} icon={<UserCheck size={18} />} status="success" />
-        <StatCard label="Pending" value={pending} icon={<Clock size={18} />} status={pending > 0 ? "warning" : "neutral"} />
+        <StatCard label="En attente" value={pending} icon={<Clock size={18} />} status={pending > 0 ? "warning" : "neutral"} />
         <StatCard label="Chauffeurs recrutés" value={totalDrivers} icon={<Network size={18} />} status="neutral" />
         <StatCard label="Total commissions" value={totalEur} format="eur" icon={<Wallet size={18} />} status="success" />
       </div>
