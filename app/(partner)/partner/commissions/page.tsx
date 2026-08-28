@@ -1,3 +1,4 @@
+import { PROMESSE_PARRAINAGE_COURTE } from '@/lib/parrainagePromesse'
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { GlassCard } from "@/components/foreas/GlassCard";
 import { Wallet, Calendar, CheckCircle2, Clock, FileDown } from "lucide-react";
@@ -49,9 +50,14 @@ export default async function PartnerCommissionsPage() {
         <h1 className="mt-xxs text-display-l font-extrabold text-text-hero">
           Commissions
         </h1>
+        {/* 28/08 — « 25€/sem × chauffeur actif » RETIRÉ : facteur vingt
+            au-dessus de la règle, et présenté comme une multiplication, donc
+            comme une projection. Interdit par le contrat partenaire §8. */}
         <p className="mt-xs text-body-lg text-text-secondary">
-          Historique de tes commissions d&apos;agent commercial indépendant
-          (25€/sem × chauffeur actif).
+          Historique de tes commissions d&apos;agent commercial indépendant.
+        </p>
+        <p className="mt-xs text-body text-text-tertiary">
+          {PROMESSE_PARRAINAGE_COURTE}
         </p>
       </header>
 

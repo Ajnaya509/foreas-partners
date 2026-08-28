@@ -1,3 +1,4 @@
+import { PROMESSE_PARRAINAGE_COURTE } from '@/lib/parrainagePromesse'
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { GlassCard } from "@/components/foreas/GlassCard";
 import { HeroGradientCard } from "@/components/foreas/HeroGradientCard";
@@ -41,9 +42,23 @@ export default async function PartnerRecrutementPage() {
         </div>
         {code ? (
           <>
+            {/* 28/08 — « 25€/sem » RETIRÉ. Ce n'était pas un autre montant,
+                c'était une autre structure : un revenu hebdomadaire à vie, soit
+                environ 108 €/mois par tête. La règle réelle donne 5 €/mois payé
+                ou 50 € une fois. Le contrat partenaire §8 l'interdit nommément.
+
+                Et « chaque inscription génère » était faux dans les deux sens :
+                une inscription ne génère rien. Seule une FACTURE PAYÉE ouvre un
+                droit — un essai gratuit n'en ouvre aucun. */}
             <p className="mt-md text-body text-text-secondary">
-              Partage cette URL avec tes prospects chauffeurs. Chaque inscription
-              via ton code génère <span className="text-violet-royal font-bold">25€/sem</span> de commission.
+              Partage cette URL avec tes prospects chauffeurs.{' '}
+              <span className="text-violet-royal font-bold">
+                {PROMESSE_PARRAINAGE_COURTE}
+              </span>
+            </p>
+            <p className="mt-xs text-caption text-text-tertiary">
+              Une inscription seule ne verse rien : le droit s’ouvre au premier
+              paiement réellement encaissé.
             </p>
             <div className="mt-lg flex flex-wrap gap-sm">
               {/* Boutons QR et WhatsApp retirés : rien derrière — un bouton mort est un mensonge. */}
