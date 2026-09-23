@@ -100,7 +100,7 @@ export default {
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "SF Pro Display", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-geist-sans)", "SF Pro Display", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-foreas-genos)", "var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"],
       },
       fontSize: {
         "display-xxl": ["56px", { lineHeight: "60px", fontWeight: "900", letterSpacing: "-2px" }],

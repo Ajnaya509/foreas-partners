@@ -142,3 +142,104 @@
     background: rgba(140, 82, 255, 0.5);
   }
 }
+
+/* Partner portal: dashboard tokens, one clear hierarchy, no decorative motion. */
+@layer components {
+  .partner-shell { @apply min-h-screen bg-obsidian text-text-hero; font-family: var(--font-foreas-inter), Inter, system-ui, sans-serif; }
+  .partner-shell h1, .partner-shell h2, .partner-shell h3 { @apply font-display font-semibold; }
+  .partner-shell h1 { @apply text-display-xl font-semibold; }
+  .partner-shell h2 { @apply text-display-l; }
+  .partner-shell h3 { @apply text-h1; }
+  .partner-shell p { @apply leading-relaxed; }
+  .partner-shell a, .partner-shell button, .partner-shell summary, .partner-shell textarea { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-electric; }
+  .partner-skip { @apply sr-only focus:not-sr-only focus:fixed focus:top-lg focus:left-lg focus:z-50 focus:rounded-lg focus:bg-obsidian-light focus:p-lg; }
+  .partner-sidebar { @apply border-b border-glass-border bg-obsidian-deep px-lg py-lg lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-b-0 lg:border-r lg:p-xxl lg:flex lg:flex-col; }
+  .partner-brand { @apply flex flex-col gap-md items-start text-text-hero; }
+  .partner-brand span { @apply text-label text-text-secondary; }
+  .partner-nav { @apply grid grid-cols-4 gap-xs mt-lg lg:flex lg:flex-col lg:gap-sm lg:mt-huge; }
+  .partner-nav-link { @apply flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-xs lg:gap-md min-h-12 px-xs lg:px-lg py-sm rounded-lg text-text-secondary font-display text-h2 font-semibold transition-colors duration-150; }
+  .partner-nav-link:hover { @apply bg-obsidian-light text-text-hero; }
+  .partner-nav-link.is-current { @apply bg-obsidian-light text-text-hero border border-glass-border-high; }
+  .partner-sidebar-footer { @apply hidden lg:block mt-auto pt-xl border-t border-glass-border; }
+  .partner-sidebar-footer p { @apply text-body font-semibold break-words; }
+  .partner-sidebar-footer span { @apply text-caption text-text-secondary; }
+  .partner-logout { @apply mt-lg flex min-h-12 items-center gap-sm text-text-secondary text-body; }
+  .partner-main { @apply lg:ml-64 mx-auto px-lg md:px-xxxl xl:px-huge pt-lg md:pt-xxxl pb-xxxl; max-width: 100rem; }
+  .partner-topline { @apply flex flex-wrap gap-sm justify-between text-label text-text-secondary mb-xxxl; }
+  .partner-preview-label { @apply text-text-hero border border-glass-border-high rounded-lg px-md py-xs; }
+  .partner-page-header { @apply max-w-3xl mb-xxxl; }
+  .partner-page-header h1 { @apply mt-md mb-lg; }
+  .partner-page-header>p:last-child { @apply text-body-lg text-text-secondary max-w-2xl; }
+  .partner-kicker { @apply text-label font-semibold text-text-secondary; }
+  .partner-home-grid { @apply grid gap-lg xl:grid-cols-2; }
+  .partner-panel { @apply bg-obsidian-light border border-glass-border rounded-xl p-xl md:p-xxxl; }
+  .partner-panel>p { @apply text-text-secondary my-md; }
+  .partner-panel h2.partner-small-title, .partner-small-title { @apply text-h1; }
+  .partner-start { @apply flex flex-col items-start; }
+  .partner-step-icon { @apply p-md rounded-lg bg-obsidian border border-glass-border-high text-gold-subtle mb-lg; }
+  .partner-start h2 { @apply my-md; }
+  .partner-start>p { @apply max-w-lg; }
+  .partner-button { @apply inline-flex items-center justify-center gap-sm min-h-12 px-lg py-sm rounded-lg border border-glass-border-high bg-obsidian text-text-hero font-display font-semibold text-h2 transition-colors duration-150 mt-md; }
+  .partner-button:hover { @apply bg-obsidian-light border-text-secondary; }
+  .partner-button:active { @apply bg-obsidian-deep; }
+  .partner-button:disabled { @apply opacity-50 cursor-not-allowed; }
+  .partner-button.is-primary { @apply bg-violet-deep border-violet-deep hover:bg-violet-deep/80; }
+  .partner-button.is-selected { @apply border-cyan-electric text-cyan-ice; }
+  .partner-policy { @apply grid sm:grid-cols-2 gap-lg py-lg; }
+  .partner-money { @apply font-sans font-semibold text-display-xl tabular-nums text-text-hero mt-sm; }
+  .partner-money span { @apply text-body font-normal; }
+  .partner-caption { @apply text-label text-text-secondary leading-relaxed; }
+  .partner-policy>.partner-caption { @apply text-label font-normal; }
+  .partner-text-link { @apply inline-flex items-center gap-sm min-h-12 text-body font-semibold text-text-hero underline underline-offset-4 decoration-glass-border-high; }
+  .partner-text-link:hover { @apply text-cyan-ice; }
+  .partner-section { @apply mt-xxxl; }
+  .partner-section-heading { @apply flex flex-wrap items-center justify-between gap-md mb-lg; }
+  .partner-section-heading h2 { @apply text-display-l; }
+  .partner-summary-grid { @apply grid gap-lg sm:grid-cols-2; }
+  .partner-stat { @apply font-sans text-display-l text-text-hero font-semibold tabular-nums; }
+  .partner-empty { @apply flex items-start gap-lg text-text-secondary py-md; }
+  .partner-empty svg { @apply shrink-0 text-text-hero; }
+  .partner-empty h3 { @apply text-text-hero mb-xs; }
+  .partner-steps { @apply grid md:grid-cols-3 gap-xxl border-t border-glass-border pt-xxl; }
+  .partner-steps li { @apply flex items-start gap-md; }
+  .partner-steps li>span { @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-glass-border-high text-label tabular-nums; }
+  .partner-steps h3 { @apply text-h2; }
+  .partner-steps p { @apply text-body text-text-secondary mt-sm; }
+  .partner-notice { @apply p-xl rounded-xl border border-glass-border-high bg-obsidian-light mb-xl; }
+  .partner-notice p { @apply text-body text-text-secondary mt-sm; }
+  .partner-audiences { @apply flex flex-wrap gap-sm; }
+  .partner-audiences .partner-button { @apply text-h3; }
+  .partner-audience-note { @apply mt-xxl pt-xl border-t border-glass-border flex items-start gap-lg; }
+  .partner-audience-note svg { @apply shrink-0 text-gold-subtle mt-xs; }
+  .partner-audience-note p { @apply text-body text-text-secondary mt-xs; }
+  .partner-kit-grid { @apply grid gap-lg md:grid-cols-2 2xl:grid-cols-3; }
+  .partner-kit-grid .partner-panel { @apply flex flex-col items-start; }
+  .partner-kit-grid .partner-panel>.partner-button { @apply mt-auto; }
+  .partner-file-label { @apply text-label text-text-secondary mb-lg; }
+  .partner-link-value { @apply break-all font-sans; }
+  .partner-shell textarea { @apply block w-full mt-md mb-md bg-obsidian rounded-lg border border-glass-border-high p-lg text-body text-text-hero resize-y; }
+  .partner-ledger { @apply border-t border-glass-border; }
+  .partner-ledger article { @apply grid grid-cols-2 md:grid-cols-3 items-center gap-md py-xl border-b border-glass-border; }
+  .partner-ledger article>div { @apply col-span-2 md:col-span-1; }
+  .partner-ledger h3 { @apply text-h2; }
+  .partner-ledger article p { @apply text-body text-text-secondary; }
+  .partner-ledger strong { @apply text-h2 font-sans tabular-nums text-right; }
+  .partner-status { @apply text-label font-semibold text-text-secondary; }
+  .partner-status.is-paid { @apply text-success; }
+  .partner-faq { @apply border-t border-glass-border; }
+  .partner-faq details { @apply border-b border-glass-border py-xs; }
+  .partner-faq summary { @apply flex min-h-12 cursor-pointer items-center justify-between gap-md py-md font-display text-h1 font-semibold; list-style:none; }
+  .partner-faq summary svg { @apply shrink-0; }
+  .partner-faq details[open] summary svg { @apply rotate-180; }
+  .partner-faq details>p { @apply text-body-lg text-text-secondary pb-xl max-w-3xl; }
+  .partner-footer { @apply flex flex-wrap justify-between gap-md mt-huge pt-xl border-t border-glass-border text-label text-text-secondary; }
+  .partner-footer a { @apply inline-flex min-h-12 items-center text-text-hero underline underline-offset-4; }
+  .partner-money, .partner-stat, .partner-link-value, .partner-ledger strong { font-family: var(--font-foreas-inter), Inter, system-ui, sans-serif; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .partner-shell *, .partner-shell *::before, .partner-shell *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+}
+
+@layer components {
+  .partner-shell h2, .partner-shell h3, .partner-shell .partner-panel h2, .partner-shell .partner-panel h3 { @apply font-semibold; }
+}

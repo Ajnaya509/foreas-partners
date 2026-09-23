@@ -1,38 +1,7 @@
-import { Sidebar } from "@/components/foreas/Sidebar";
-import { TopBar } from "@/components/foreas/TopBar";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import type {Metadata} from 'next';
+import localFont from 'next/font/local';
 
-export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-
-  // Auth check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?role=partner&next=/partner");
-  }
-
-  // Try to fetch partner profile (graceful fallback if not yet created)
-  const { data: partner } = await supabase
-    .from("partners")
-    .select("id, company_name, contact_email, referral_code")
-    .eq("contact_email", user.email)
-    .maybeSingle();
-
-  const partnerName =
-    partner?.company_name ?? user.email?.split("@")[0] ?? "Directeur";
-  const partnerCode = partner?.referral_code ?? "FOREAS-NEW";
-
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar partnerCode={partnerCode} partnerName={partnerName} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar partnerName={partnerName} notificationsCount={3} />
-        <main className="flex-1 px-lg lg:px-xl py-lg lg:py-xl">{children}</main>
-      </div>
-    </div>
-  );
-}
+const inter = localFont({src: '../../public/fonts/Inter-Regular.ttf', variable: '--font-foreas-inter', display: 'swap'});
+const genos = localFont({src: '../../public/fonts/Genos-Variable.ttf', variable: '--font-foreas-genos', display: 'swap'});
+export const metadata:Metadata={title:'FOREAS — Espace partenaire',robots:{index:false,follow:false}};
+export default function PartnerLayout({children}:{children:React.ReactNode}){return <div className={`${inter.variable} ${genos.variable}`}>{children}</div>;}
