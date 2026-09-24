@@ -142,3 +142,220 @@
     background: rgba(140, 82, 255, 0.5);
   }
 }
+
+/* Rideau FOREAS, repris du site public. */
+.voile-de-marque {
+  /* La toile ne porte AUCUN fond : ce sont les deux volets qui sont noirs.
+     Quand ils s'écartent, la page apparaît entre eux — il n'y a pas de fondu
+     par-dessus qui viendrait laver les couleurs au passage. */
+  --rideau-angle: 21.4609deg;
+  --rideau-logo: clamp(148px, 31vw, 268px);
+  --rideau-couture: calc(var(--rideau-logo) * 0.31488);
+  --rideau-pose: 440ms;   /* le signe immobile */
+  --rideau-trait: 460ms;  /* la barre s'allonge et s'allume */
+  --rideau-ecart: 700ms;  /* les volets partent */
+
+  /* Chevauchement des deux volets. Sans lui, deux plans noirs qui se touchent
+     sur une diagonale laissent passer un fil du fond de page entre eux — un
+     cheveu clair en travers de l'écran, visible sur la capture du 27/08.
+     Le décalage est rattrapé sur l'ancre et sur l'arête, sinon les deux moitiés
+     du signe seraient désalignées d'un pixel PILE à l'endroit où la couture
+     traverse le slash. */
+  --rideau-chevauche: 1px;
+
+  /* ⚠️ LA TAILLE DES VOLETS ÉTAIT ÉCRITE EN vmax, ET C'ÉTAIT DEUX FOIS FAUX.
+     150vmax de large sur un téléphone, c'est une surface de 84 000 pixels de
+     côté annoncée au compositeur — pour couvrir un écran de 390. Et le trajet
+     de sortie valait 155vmax : les volets quittaient l'écran dans les 3 %
+     premiers de l'animation. On ne voyait pas un rideau s'ouvrir, on voyait
+     l'écran noir disparaître d'un coup.
+
+     La bonne mesure est géométrique. La distance de la couture au coin le plus
+     éloigné vaut (largeur·cos + hauteur·sin) / 2, avec l'angle de la couture :
+     cos 21,4609° = 0,93063 et sin = 0,36598, soit 0,4653 vw + 0,1830 vh.
+     `50vw + 50vh` couvre cela avec de la marge sur tous les formats, et sert à
+     la fois de largeur ET de trajet : un volet qui se déplace de sa propre
+     largeur est sorti, par construction. Une seule valeur, donc rien à
+     resynchroniser le jour où on la change. */
+  --rideau-largeur: calc(50vw + 50vh);
+  --rideau-hauteur: calc(200vw + 200vh);
+
+  /* Filet SANS JavaScript : le voile se retire du regard quoi qu'il arrive.
+     ⚠️ 2600 ms et non 1800 : le rideau complet dure 1740 ms, et un filet posé
+     à 60 ms de la fin coupe l'écartement dès que l'appareil est un peu lent.
+     Un filet doit rattraper une panne, pas devenir l'horloge. Le délai n'a
+     aucun coût : à ce moment-là les volets sont hors de l'écran et le voile
+     est transparent, il ne cache plus rien et ne prend aucun clic. */
+  animation: voile-de-marque-sortie 2600ms linear forwards;
+}
+
+@keyframes voile-de-marque-sortie {
+  0%,
+  99% {
+    visibility: visible;
+  }
+  100% {
+    visibility: hidden;
+  }
+}
+
+/* Le repère tourné : son axe vertical EST la couture. Tout ce qui vit dedans
+   raisonne en « à gauche de la couture » / « à droite de la couture », ce qui
+   rend les deux volets exacts sur n'importe quelle taille d'écran, sans
+   recalculer d'angle en pourcentage. */
+.rideau-repere {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(var(--rideau-couture)) rotate(var(--rideau-angle));
+}
+
+.rideau-volet {
+  position: absolute;
+  top: calc(-0.5 * var(--rideau-hauteur));
+  width: var(--rideau-largeur);
+  height: var(--rideau-hauteur);
+  background: #000000;
+  overflow: hidden;
+  will-change: transform;
+  animation: var(--rideau-ecart) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  /* Le retard vaut pose + trait + le battement du dédoublement (140 ms).
+     ⚠️ Le JavaScript ne modifie QUE ce retard, et seulement AVANT que
+     l'animation ait commencé. Raccourcir un retard non écoulé ne provoque
+     aucun saut ; toucher une animation en cours, si. */
+  animation-delay: calc(var(--rideau-pose) + var(--rideau-trait) + 140ms);
+}
+
+.rideau-volet--gauche {
+  right: calc(-1 * var(--rideau-chevauche));
+  animation-name: rideau-ecarter-gauche;
+}
+.rideau-volet--droit {
+  left: 0;
+  animation-name: rideau-ecarter-droit;
+}
+
+@keyframes rideau-ecarter-gauche {
+  to {
+    transform: translateX(calc(-1 * var(--rideau-largeur)));
+  }
+}
+@keyframes rideau-ecarter-droit {
+  to {
+    transform: translateX(calc(var(--rideau-largeur)));
+  }
+}
+
+/* L'arête de lumière, portée par CHAQUE volet à son bord intérieur : c'est ce
+   qui fait que le trait « se dédouble » au lieu de disparaître. Elle grandit
+   depuis le milieu, exactement là où se trouve la barre du slash. */
+.rideau-arete {
+  position: absolute;
+  /* ⚠️ `top: -150vmax` posait le trait UNE DEMI-HAUTEUR AU-DESSUS de son volet.
+     Le volet coupe ce qui dépasse : on ne voyait donc que la moitié basse du
+     trait, du haut de l'écran jusqu'au milieu, et en violet — parce que c'est
+     la couleur de cette moitié-là du dégradé. Le trait doit épouser son volet,
+     pas flotter à côté. */
+  /* ⚠️ SECONDE PASSE — `height: 100%` REPRODUISAIT LE BUG DES 155vmax.
+     100 % du volet vaut calc(200vw + 200vh), soit 6000 px sur un écran de
+     bureau. Or il n'y a que ~1700 px de trait réellement visibles. Le trait
+     atteignait donc toute sa longueur visible à scaleY ≈ 0,19 — et avec une
+     courbe aussi chargée à l'avant, ça tombe à 16 ms sur les 460 ms prévues.
+     Il ne s'allongeait pas : il claquait. Et son dégradé, étalé sur 6000 px,
+     ne montrait à l'écran qu'une seule teinte.
+     Le trait a maintenant sa propre hauteur, calée sur l'ÉCRAN et non sur le
+     volet : l'allongement se voit sur toute sa durée, et le cyan du haut
+     rejoint vraiment le violet du bas. */
+  top: 50%;
+  width: 2.5px;
+  height: calc(100vh + 50vw);
+  background: linear-gradient(180deg, #4fd8f0 0%, #7c6cf5 50%, #a855f7 100%);
+  box-shadow: 0 0 16px rgba(124, 108, 245, 0.7), 0 0 42px rgba(79, 216, 240, 0.35);
+  transform: translateY(-50%) scaleY(0);
+  transform-origin: 50% 50%;
+  animation: rideau-allonger var(--rideau-trait) cubic-bezier(0.22, 1, 0.36, 1)
+    var(--rideau-pose) forwards;
+}
+.rideau-volet--gauche .rideau-arete {
+  right: var(--rideau-chevauche); /* rattrape le chevauchement : reste SUR la couture */
+}
+.rideau-volet--droit .rideau-arete {
+  left: 0;
+}
+
+@keyframes rideau-allonger {
+  /* Le recentrage doit être RÉPÉTÉ dans les deux images : une animation de
+     `transform` remplace la propriété entière, elle ne s'ajoute pas à celle
+     déclarée sur la règle. Sans lui, le trait sauterait d'une demi-hauteur au
+     premier battement. */
+  from {
+    transform: translateY(-50%) scaleY(0);
+  }
+  to {
+    transform: translateY(-50%) scaleY(1);
+  }
+}
+
+/* Le signe, identique dans les deux volets — chacun n'en montre que sa moitié,
+   parce qu'il est posé dans un volet qui coupe à la couture. C'est exactement
+   ce que font foreas_curtain_left.svg et foreas_curtain_right.svg. */
+.rideau-ancre {
+  position: absolute;
+  top: calc(0.5 * var(--rideau-hauteur)); /* le milieu du volet = le milieu de l'écran */
+  width: 0;
+  height: 0;
+  transform: rotate(calc(-1 * var(--rideau-angle))); /* on annule la rotation */
+}
+.rideau-volet--gauche .rideau-ancre {
+  right: var(--rideau-chevauche); /* idem : les deux moitiés du signe restent alignées */
+}
+.rideau-volet--droit .rideau-ancre {
+  left: 0;
+}
+
+.rideau-signe {
+  position: absolute;
+  left: calc(-1 * var(--rideau-couture));
+  top: 0;
+  width: var(--rideau-logo);
+  height: auto;
+  transform: translate(-50%, -50%);
+  /* ⚠️ #8E8E93, un gris — PAS du blanc. La charte a aboli le blanc pur, et les
+     fichiers Rive d'origine portent encore #FFFFFF : c'est le brief qui fait
+     foi, il le dit explicitement. */
+  fill: #8e8e93;
+}
+
+/* Le F s'efface le premier, le slash le suit — le temps que l'arête de lumière
+   ait pris sa place. À 900 ms il ne reste que le trait, comme au brief. */
+.rideau-lettre {
+  animation: rideau-effacer 380ms ease-out var(--rideau-pose) forwards;
+}
+.rideau-barre {
+  animation: rideau-effacer 340ms ease-out calc(var(--rideau-pose) + 120ms) forwards;
+}
+@keyframes rideau-effacer {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ── Mouvement réduit : pas une version lente, une version ABSENTE ────────
+   Piège n°4 du brief. Le voile n'est jamais joué, le contenu est là tout de
+   suite. Les animations internes sont neutralisées aussi : sans ça, les volets
+   resteraient noirs, immobiles et en travers de l'écran. */
+@media (prefers-reduced-motion: reduce) {
+  .voile-de-marque {
+    animation: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .rideau-volet,
+  .rideau-arete,
+  .rideau-lettre,
+  .rideau-barre {
+    animation: none;
+  }
+}
