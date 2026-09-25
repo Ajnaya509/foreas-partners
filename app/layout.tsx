@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "./partner-redesign.css";
 import "./auth-redesign.css";
+import "./enrollment.css";
 import { LegacyChrome } from "@/components/partner/LegacyChrome";
 
 const inter = localFont({ src: [

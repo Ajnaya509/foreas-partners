@@ -56,6 +56,7 @@ export async function updateSession(request: NextRequest) {
     pathname === "/login" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/handoff") ||
+    pathname === "/inscription" || pathname.startsWith("/inscription/") ||
     pathname === "/";
   const isApiRoute = pathname.startsWith("/api");
   const isPublicTermsRoute = pathname.startsWith("/programme-partenaire/conditions/");
