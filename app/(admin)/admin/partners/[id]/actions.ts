@@ -1,55 +1,23 @@
 "use server";
+import { revalidatePath } from 'next/cache';
+import { adminProgramRequest } from '@/lib/partner/admin-program-server';
+import { discountSchema,partnerUuid,type DiscountInput } from '@/lib/partner/admin-program';
 
-import { railwayPatch } from "@/lib/api/railway";
-import { isCurrentUserAdmin } from "@/lib/queries/admin";
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
-
-export async function updatePartnerDiscount(
-  partnerId: string,
-  data: {
-    discount_percent_for_recruits: number;
-    discount_duration_months: number;
-    landing_message: string;
-    landing_hero_url: string;
-    is_promo_active: boolean;
-    /** Override commission €/mois par filleul (admin force une valeur précise). */
-    commission_rate?: number;
-  }
-) {
-  const isAdmin = await isCurrentUserAdmin();
-  if (!isAdmin) throw new Error("Not authorized");
-
-  const { commission_rate, ...discountData } = data;
-
-  // Remise + config promo → Railway (comportement existant inchangé).
-  await railwayPatch(`/api/admin/partners/${partnerId}/discount`, discountData);
-
-  // Commission → override admin écrit en direct via Supabase (RLS partners_admin_all).
-  // Se répercute sur le payout (cf. TROU #4). L'auto-palier (NULL) est géré côté base
-  // une fois APP_BRIEF_PARTNER_DISCOUNT_TIERS livré.
-  if (typeof commission_rate === "number" && Number.isFinite(commission_rate)) {
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from("partners")
-      .update({ commission_rate })
-      .eq("id", partnerId);
-    if (error) throw new Error(`Commission : ${error.message}`);
-  }
-
-  revalidatePath(`/admin/partners/${partnerId}`);
-  revalidatePath("/admin/partners");
+export async function updatePartnerDiscount(partnerId:string,data:DiscountInput):Promise<void>{
+  partnerUuid.parse(partnerId);
+  const input=discountSchema.parse(data);
+  const raw=await adminProgramRequest(`/api/admin/partners/${partnerId}/discount`,'PATCH',input);
+  const result=raw as {ok?:unknown;partner?:Record<string,unknown>};
+  if(result?.ok!==true||result.partner?.id!==partnerId)throw new Error('L’enregistrement n’a pas été confirmé. Actualisez le dossier.');
+  for(const [key,value] of Object.entries(input))if(result.partner[key]!==value)
+    throw new Error('Les réglages retournés diffèrent. Actualisez le dossier avant de recommencer.');
+  revalidatePath(`/admin/partners/${partnerId}`);revalidatePath('/admin/partners');
 }
-
-export async function updatePartnerStatus(
-  partnerId: string,
-  status: "active" | "paused"
-) {
-  const isAdmin = await isCurrentUserAdmin();
-  if (!isAdmin) throw new Error("Not authorized");
-
-  await railwayPatch(`/api/admin/partners/${partnerId}/status`, { status });
-  revalidatePath(`/admin/partners/${partnerId}`);
-  revalidatePath("/admin/partners");
-  revalidatePath("/admin/partner-pending");
+export async function updatePartnerStatus(partnerId:string,status:'active'|'paused'):Promise<void>{
+  partnerUuid.parse(partnerId);
+  if(status!=='active'&&status!=='paused')throw new Error('État invalide.');
+  const raw=await adminProgramRequest(`/api/admin/partners/${partnerId}/status`,'PATCH',{status});
+  const result=raw as {ok?:unknown;status?:unknown};
+  if(result?.ok!==true||result.status!==status)throw new Error('L’admission ou la pause n’a pas été confirmée. Actualisez le dossier.');
+  for(const path of [`/admin/partners/${partnerId}`,'/admin/partners','/admin/partner-pending'])revalidatePath(path);
 }

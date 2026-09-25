@@ -1,0 +1,58 @@
+import { canonical } from "./model.js";
+import { codeHash, codePolicyHash, readCodeProject, type CodeProject, type CodeArtifact } from "./codePreparation.js";
+import { readCodeJobArtifact, type CodeJob, type CodeJobTarget } from "./codeJobs.js";
+
+/** Private admin projection. Source text is inert data, never a chat instruction. */
+export interface CodeReview {
+  version: 1; ownerId: string; missionId: string; stepId: string; planVersion: number;
+  jobId: string; mode: "prepare"|"test"; jobState: CodeJob["state"]; jobUpdatedAt: string;
+  brief: string; policy: CodeProject; policyHash: string; artifact: CodeArtifact; artifactHash: string;
+  readAt: string;
+}
+export class CodeReviewError extends Error {
+  constructor() { super("code_review_invalid"); this.name="CodeReviewError"; }
+}
+const bad = (): never => { throw new CodeReviewError(); };
+const object = (v: unknown): v is Record<string,unknown> => !!v && typeof v==="object" && !Array.isArray(v);
+const exact = (v: unknown, keys: string): v is Record<string,unknown> => object(v) && Object.keys(v).sort().join(",")===keys;
+const id = (v: unknown): v is string => typeof v==="string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(v);
+function timestamp(v: unknown): v is string {
+  if(typeof v!=="string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(v)
+    || !Number.isFinite(Date.parse(v)))return false;
+  const [year,month,day]=v.slice(0,10).split("-").map(Number);
+  return month!>=1 && month!<=12 && day!>=1 && day!<=new Date(Date.UTC(year!,month!,0)).getUTCDate();
+}
+/** The expected coordinates come from the authenticated server request. */
+export function readCodeReview(raw: unknown, expected: CodeJobTarget): CodeReview|null {
+  if(raw===null)return null;
+  try {
+    if(!exact(raw,"artifact,artifactHash,brief,jobId,jobState,jobUpdatedAt,missionId,mode,ownerId,planVersion,policy,policyHash,readAt,stepId,version")
+      || raw.version!==1 || typeof raw.ownerId!=="string" || !/^[A-Za-z0-9_-]{1,128}$/.test(raw.ownerId)
+      || !id(raw.missionId) || typeof raw.stepId!=="string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(raw.stepId)
+      || !Number.isSafeInteger(raw.planVersion) || Number(raw.planVersion)<1
+      || Object.entries(expected).some(([key,value])=>raw[key]!==value)
+      || typeof raw.jobId!=="string" || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(raw.jobId)
+      || !["prepare","test"].includes(String(raw.mode))
+      || !["queued","running","paused","ready","needs_attention","cancelled"].includes(String(raw.jobState))
+      || typeof raw.brief!=="string" || !raw.brief.trim() || raw.brief.length>4000
+      || !timestamp(raw.jobUpdatedAt) || !timestamp(raw.readAt)
+      || typeof raw.policyHash!=="string" || !/^[a-f0-9]{64}$/.test(raw.policyHash)
+      || typeof raw.artifactHash!=="string" || !/^[a-f0-9]{64}$/.test(raw.artifactHash)
+      || Buffer.byteLength(canonical(raw))>2*1024*1024+64*1024)return bad();
+    const policy=readCodeProject(raw.policy as CodeProject);
+    if(policy.ownerId!==expected.ownerId || codePolicyHash(policy)!==raw.policyHash)return bad();
+    const artifact=readCodeJobArtifact(raw.artifact,{id:raw.jobId,ownerId:expected.ownerId,projectId:policy.id,
+      policy,policyHash:raw.policyHash,brief:raw.brief});
+    if(codeHash(canonical(artifact))!==raw.artifactHash || !timestamp(artifact.createdAt)
+      || Date.parse(raw.jobUpdatedAt)>Date.parse(raw.readAt)+30000
+      || Date.parse(artifact.createdAt)>Date.parse(raw.readAt)+30000)return bad();
+    return structuredClone({...raw,policy,artifact}) as unknown as CodeReview;
+  }catch{return bad();}
+}
+export function codeReviewView(job: CodeJob, now: Date): CodeReview|null {
+  if(job.artifact===null && job.artifactHash===null)return null;
+  return readCodeReview({version:1,ownerId:job.ownerId,missionId:job.missionId,stepId:job.stepId,planVersion:job.planVersion,
+    jobId:job.id,mode:job.mode,jobState:job.state,jobUpdatedAt:job.updatedAt,brief:job.brief,policy:job.policy,
+    policyHash:job.policyHash,artifact:job.artifact,artifactHash:job.artifactHash,readAt:now.toISOString()},
+    {ownerId:job.ownerId,missionId:job.missionId,stepId:job.stepId,planVersion:job.planVersion});
+}

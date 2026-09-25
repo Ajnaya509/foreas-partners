@@ -39,9 +39,9 @@ export const POLITIQUE_PARRAINAGE = 'FOREAS_REFERRAL_POLICY_V2026_08_21'
 
 /** Le texte complet canonique (contrat partenaire §8). */
 export const PROMESSE_PARRAINAGE =
-  '5 € pour chaque facture mensuelle payée par ton filleul. 50 € une fois après ' +
-  'son premier abonnement annuel payé. Versement prévu le 25 du mois suivant si ' +
-  'ton compte est prêt.'
+  '5 € pour chaque mensualité réellement payée et admissible. 50 € une seule fois après ' +
+  'le premier annuel payé et admissible. Les droits mensuels admissibles sont versés le mois suivant, ' +
+  'si le compte de versement est prêt.'
 
 /**
  * Le texte court canonique. Il garde les QUATRE faits obligatoires :

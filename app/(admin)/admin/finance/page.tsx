@@ -3,41 +3,27 @@ import { GlassCard } from "@/components/foreas/GlassCard";
 import { StatCard } from "@/components/foreas/StatCard";
 import { Wallet, TrendingUp, Activity, Repeat } from "lucide-react";
 import { getAdminGlobalKPIs } from "@/lib/queries/admin";
-import { createClient } from "@/lib/supabase/server";
+import Link from 'next/link';
+import {getAdminRights} from '@/lib/partner/admin-program-server';
+import {AdminRightsTable} from '@/components/partner/AdminRightsTable';
 
 export default async function AdminFinancePage() {
   const kpis = await getAdminGlobalKPIs();
-  const supabase = await createClient();
-
-  // Commissions partner du mois
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { data: commissions } = await supabase
-    .from("partner_commissions")
-    .select("commission_amount, status")
-    .gte("created_at", startOfMonth.toISOString());
-
-  const list = (commissions ?? []) as { commission_amount: number | null; status: string }[];
-  const totalCommissions = list.reduce((acc, c) => acc + Number(c.commission_amount ?? 0), 0);
-  const paidCommissions = list
-    .filter((c) => c.status === "paid")
-    .reduce((acc, c) => acc + Number(c.commission_amount ?? 0), 0);
-  const pendingCommissions = list
-    .filter((c) => c.status === "pending")
-    .reduce((acc, c) => acc + Number(c.commission_amount ?? 0), 0);
+  const rights = await getAdminRights({});
 
   return (
     <div className="space-y-xl animate-fade-in-down">
       <header>
         <Eyebrow>Console Admin</Eyebrow>
-        <h1 className="mt-xxs text-display-l font-extrabold text-text-hero">Finance</h1>
+        <h1 className="mt-xxs font-display text-display-l text-text-hero">Finance</h1>
         {/* « estimé » partout : le chiffre sort d'une constante (admin.ts), pas de Stripe. */}
         <p className="mt-xs text-body-lg text-text-secondary">
-          MRR estimé, commissions partenaires, paiements Stripe.
+          Revenus estimés et droits du programme partenaire. Les confirmations de transfert sont séparées des réceptions bancaires.
         </p>
       </header>
+
+      <Link href="/admin/verification-versements" className="font-display inline-flex min-h-12 items-center mr-lg underline">Vérifier les pièces avant versement</Link>
+      <Link href="/admin/courriels" className="font-display inline-flex min-h-12 items-center underline">Vérifier les courriels d’abonnement</Link>
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-lg">
         <StatCard label="MRR estimé" value={kpis.mrrEstimated} format="eur" status="success" icon={<Repeat size={18} />} />
@@ -46,33 +32,12 @@ export default async function AdminFinancePage() {
         <StatCard label="Revenus jour" value={kpis.revenueToday} format="eur" icon={<Wallet size={18} />} status="success" />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
-        <StatCard label="Commissions partenaires (mois)" value={totalCommissions} format="eur" icon={<Wallet size={18} />} status="neutral" />
-        <StatCard label="Versées" value={paidCommissions} format="eur" icon={<TrendingUp size={18} />} status="success" />
-        <StatCard label="En attente" value={pendingCommissions} format="eur" icon={<Activity size={18} />} status="warning" />
-      </section>
-
       <GlassCard>
-        <Eyebrow>Module Stripe</Eyebrow>
-        <h2 className="mt-xxs text-h1 font-bold text-text-hero">Connect & Webhooks</h2>
-        <p className="mt-xs text-body text-text-secondary">
-          Backend Railway connecté à Stripe : webhooks payment_intent, account.updated, charge.dispute, payout.
-          Volume Stripe Connect Conciergerie suivi sur app mobile FOREAS Driver.
-        </p>
-        <div className="mt-md grid grid-cols-1 sm:grid-cols-3 gap-md">
-          <div className="p-md rounded-lg bg-glass-low border border-glass-border">
-            <div className="text-micro uppercase tracking-wider text-text-tertiary">Stripe Connect</div>
-            <div className="mt-xxs text-h3 font-bold text-text-primary">Actif</div>
-          </div>
-          <div className="p-md rounded-lg bg-glass-low border border-glass-border">
-            <div className="text-micro uppercase tracking-wider text-text-tertiary">Webhooks</div>
-            <div className="mt-xxs text-h3 font-bold text-success">OK</div>
-          </div>
-          <div className="p-md rounded-lg bg-glass-low border border-glass-border">
-            <div className="text-micro uppercase tracking-wider text-text-tertiary">Disputes 30j</div>
-            <div className="mt-xxs text-h3 font-bold text-text-primary">0</div>
-          </div>
-        </div>
+        <Eyebrow>Programme partenaire</Eyebrow>
+        <h2 className="mt-xxs font-display text-h1 text-text-hero">Commissions et transferts</h2>
+        {rights.status==='ready'?<AdminRightsTable data={rights.data} asOf={rights.asOf}/>:<p role="alert" className="mt-md text-text-secondary">Le relevé des commissions n’est pas disponible. Aucun total n’est déduit de cette erreur.</p>}
+        <Link href="/admin/payouts" className="font-display inline-flex min-h-12 items-center mt-md underline">Ouvrir le relevé et ses filtres</Link>
+        <p className="mt-md text-caption text-text-secondary">Cette page lit le registre. Elle ne vérifie pas en direct l’état global des services Stripe et ne déclenche aucun versement.</p>
       </GlassCard>
     </div>
   );

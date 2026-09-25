@@ -58,9 +58,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/handoff") ||
     pathname === "/";
   const isApiRoute = pathname.startsWith("/api");
+  const isPublicTermsRoute = pathname.startsWith("/programme-partenaire/conditions/");
 
   // Si pas d'utilisateur et route protégée → redirect /login
-  if (!user && !isAuthRoute && !isApiRoute) {
+  if (!user && !isAuthRoute && !isApiRoute && !isPublicTermsRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

@@ -1,0 +1,8 @@
+import type { Need } from "./types.js";
+
+export class CapabilityNeedsError extends Error {
+  constructor(public readonly needs: Need[]) { super("capability_needs"); }
+}
+export class MissionValidationError extends Error {
+  constructor(public readonly code: string) { super(code); }
+}

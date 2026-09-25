@@ -1,0 +1,34 @@
+{
+  "version": "2026-09-13.1",
+  "status": "prepared_not_published",
+  "files": [
+    {
+      "file": "GUIDE_MARQUE.html",
+      "sha256": "38a2717716abc6aa1fef53eb3cd1b727542b385c4f5fc8615367ddba850b537e"
+    },
+    {
+      "file": "GUIDE_MARQUE.txt",
+      "sha256": "54324bdc18f5dcc8bc7ebd12edda217d5c5a06d27eba2904a151c4ab15da2fd8"
+    },
+    {
+      "file": "LIRE_AVANT_UTILISATION.md",
+      "sha256": "5b13d8086f9aa28004540a89818395f467621d60d93c1da5222eb256ec6fa7cd"
+    },
+    {
+      "file": "logo-blanc.svg",
+      "sha256": "f7665b9342169fa030bc9754ccc7a43ab5ce748d2506b8f524b591c1042656c6"
+    },
+    {
+      "file": "logo-mini-blanc.svg",
+      "sha256": "846b6a16e07a5a615b10a87fabfbf04bb4f29736e6fc37f23ee5b72cc6156a57"
+    },
+    {
+      "file": "logo-mini-noir.svg",
+      "sha256": "4eb459b9c2901c6481f734e9f1c0db26a20e60651716818b8f00370adecf8b09"
+    },
+    {
+      "file": "logo-noir.svg",
+      "sha256": "e0d3c81fa2815f8d92089068835e9fb6727519a4912dc1a0323e4c7f26debdf7"
+    }
+  ]
+}

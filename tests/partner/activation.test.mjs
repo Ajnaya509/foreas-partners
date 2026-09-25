@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {activationAccess,activationFilename} from '../../lib/partner/activation-access.ts';
+const asset={filename:'PLAQUETTE.pdf',id:'foreas-driver-centre-plaquette',version:'candidate',format:'pdf',sha256:'a'.repeat(64),bytes:10,title:'Test',description:'Test'};
+const me={admission:{state:'active'},capabilities:{can_recruit:true},terms:{required_version:'v1',accepted_version:'v1',acceptance_required:false}};
+const item={id:asset.id,version:asset.version,format:asset.format,url:'https://partners.foreas.xyz/partner/ressources/PLAQUETTE.pdf'};
+const kit={availability:'available',items:[item]};
+test('document actif exact seul autorisé',()=>assert.equal(activationAccess(asset,me,kit),true));
+for(const patch of [{admission:{state:'paused'}},{capabilities:{can_recruit:false}},{terms:{required_version:null,accepted_version:null,acceptance_required:false}},{terms:{required_version:'v2',accepted_version:'v1',acceptance_required:false}},{terms:{required_version:'v1',accepted_version:'v1',acceptance_required:true}}])test('accès absent ou accord non courant refusé '+JSON.stringify(patch),()=>assert.equal(activationAccess(asset,{...me,...patch},kit),false));
+for(const patch of [{id:'autre'},{version:'ancienne'},{format:'zip'},{url:'https://elsewhere.invalid/partner/ressources/PLAQUETTE.pdf'},{url:item.url+'?account=other'},{url:item.url+'#x'},{url:'https://someone@partners.foreas.xyz/partner/ressources/PLAQUETTE.pdf'},{url:'javascript:alert(1)'}])test('publication différente refusée '+JSON.stringify(patch),()=>assert.equal(activationAccess(asset,me,{...kit,items:[{...item,...patch}]}),false));
+test('retrait du catalogue bloque immédiatement',()=>{assert.equal(activationAccess(asset,me,{availability:'not_published',items:[]}),false);assert.equal(activationAccess(asset,me,{...kit,items:[]}),false);});
+test('aucune traversée de répertoire ou ressource interne',()=>{for(const name of ['../secret.pdf','%2e%2e%2fsecret.pdf','offre.md','secret.env','/PLAQUETTE.pdf','PLAQUETTE.pdf/'])assert.equal(activationFilename(name),false);assert.equal(activationFilename('30_KIT_MARQUE_FOREAS.zip'),true);});

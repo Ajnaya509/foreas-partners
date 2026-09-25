@@ -1,0 +1,250 @@
+import { randomUUID } from 'node:crypto';
+import { cleanObjective } from './model.js';
+import type { MissionRpcClient } from './repository.js';
+
+/** Only the trusted server relay may produce this value, after checking the original update. */
+export interface VerifiedTelegramMissionAdmission {
+  ownerId: string;
+  botScopeId: string;
+  telegramSubject: string;
+  chatId: string;
+  updateId: number;
+  messageId: number;
+  eventSha256: string;
+  originVerifiedAt: string;
+  originExpiresAt: string;
+  input: { kind: 'text'; objective: string } | { kind: 'voice'; voiceFileRef: string };
+}
+export interface TelegramInboxLease {
+  holder: string;
+  generation: number;
+  expiresAt: string;
+  /** Expired original authority permits lookup/attachment of an existing mission only. */
+  phase: 'submit' | 'reconcile_only';
+}
+export type TelegramInboxIssue = 'origin_expired' | 'access_revoked' | 'transcription_unavailable'
+  | 'transcription_rejected' | 'submission_unknown' | 'mission_conflict' | 'reply_missing' | 'processing_failed';
+export interface TelegramInboxRecord {
+  id: string;
+  ownerId: string;
+  botScopeId: string;
+  telegramSubject: string;
+  chatId: string;
+  updateId: number;
+  messageId: number;
+  requestId: string;
+  eventSha256: string;
+  originVerifiedAt: string;
+  originExpiresAt: string;
+  kind: 'text' | 'voice';
+  objective: string | null;
+  voiceFileRef: string | null;
+  state: 'received' | 'processing' | 'submitted' | 'needs_attention';
+  revision: number;
+  attempts: number;
+  lease: TelegramInboxLease | null;
+  missionId: string | null;
+  lastIssue: TelegramInboxIssue | null;
+  receivedAt: string;
+  updatedAt: string;
+}
+export interface TelegramInbox {
+  admit(source: unknown): Promise<{ record: TelegramInboxRecord; replay: boolean }>;
+  get(ownerId: string, id: string): Promise<TelegramInboxRecord | null>;
+  getByUpdate(ownerId: string, botScopeId: string, updateId: number): Promise<TelegramInboxRecord | null>;
+  claim(input: {ownerId: string; botScopeId: string; holder: string; leaseSeconds: number}): Promise<TelegramInboxRecord | null>;
+  attachTranscript(previous: TelegramInboxRecord, input: {objective: string; voiceFileRef: string}): Promise<TelegramInboxRecord>;
+  /** Requires the current fenced lease, but NOT still-live original authority: existing mission only. */
+  attachMission(previous: TelegramInboxRecord, missionId: string): Promise<TelegramInboxRecord>;
+  recordIssue(previous: TelegramInboxRecord, input: {code: TelegramInboxIssue; retryAfterSeconds?: number}): Promise<TelegramInboxRecord>;
+}
+export class TelegramInboxError extends Error {
+  constructor(public readonly code: string) { super(code); this.name = 'TelegramInboxError'; }
+}
+const knownErrors = new Set(['telegram_inbox_invalid', 'telegram_inbox_replay_conflict', 'telegram_inbox_not_found',
+  'telegram_inbox_lease_lost', 'telegram_inbox_revision_conflict', 'telegram_inbox_transcript_conflict',
+  'telegram_inbox_mission_mismatch', 'telegram_inbox_issue_invalid', 'telegram_inbox_origin_expired']);
+const issues: TelegramInboxIssue[] = ['origin_expired', 'access_revoked', 'transcription_unavailable', 'transcription_rejected',
+  'submission_unknown', 'mission_conflict', 'reply_missing', 'processing_failed'];
+const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const bounded = (v: unknown, max = 128): v is string => typeof v === 'string' && v.length > 0 && v.length <= max && v.trim() === v;
+const integer = (v: unknown, minimum = 0): v is number => Number.isSafeInteger(v) && (v as number) >= minimum;
+const date = (v: unknown): v is string => typeof v === 'string' && Number.isFinite(Date.parse(v));
+const invalid = (): never => { throw new TelegramInboxError('telegram_inbox_invalid'); };
+function exactKeys(v: Record<string, unknown>, keys: string[]): boolean { return Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k)); }
+function validateAdmission(v: unknown): VerifiedTelegramMissionAdmission {
+  if (!object(v) || !exactKeys(v, ['ownerId','botScopeId','telegramSubject','chatId','updateId','messageId','eventSha256','originVerifiedAt','originExpiresAt','input'])
+    || !bounded(v.ownerId) || typeof v.botScopeId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(v.botScopeId)
+    || typeof v.telegramSubject !== 'string' || !/^[1-9][0-9]{0,15}$/.test(v.telegramSubject)
+    || BigInt(v.telegramSubject) > 4503599627370495n || v.chatId !== v.telegramSubject
+    || !integer(v.updateId) || !integer(v.messageId,1) || typeof v.eventSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.eventSha256)
+    || !date(v.originVerifiedAt) || !date(v.originExpiresAt) || !object(v.input)) return invalid();
+  const verified = Date.parse(v.originVerifiedAt as string), expires = Date.parse(v.originExpiresAt as string);
+  if (expires <= verified || expires - verified > 300_000) invalid();
+  const input = v.input as Record<string, unknown>;
+  if (input.kind === 'text' && exactKeys(input, ['kind','objective'])) {
+    try { if (cleanObjective(input.objective) !== input.objective) invalid(); } catch { invalid(); }
+  } else if (input.kind === 'voice' && exactKeys(input, ['kind','voiceFileRef'])) {
+    if (typeof input.voiceFileRef !== 'string' || !/^[A-Za-z0-9_-]{1,512}$/.test(input.voiceFileRef)) invalid();
+  } else invalid();
+  return structuredClone(v) as unknown as VerifiedTelegramMissionAdmission;
+}
+export function telegramMissionRequestId(botScopeId: string, updateId: number): string {
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(botScopeId) || !integer(updateId)) invalid();
+  return `tg-mission:${botScopeId}:${updateId}`;
+}
+/** Convenience guard only; the worker still checks current access and fenced DB state before submission. */
+export function canCreateTelegramInboxMission(record: TelegramInboxRecord, now: Date): boolean {
+  const time = now.getTime();
+  return Number.isFinite(time) && record.state === 'processing' && record.missionId === null
+    && !!record.objective && record.lease?.phase === 'submit'
+    && Date.parse(record.originExpiresAt) > time && Date.parse(record.lease.expiresAt) > time;
+}
+function parseRecord(v: unknown): TelegramInboxRecord {
+  if (!object(v) || !bounded(v.id) || !bounded(v.ownerId) || typeof v.botScopeId !== 'string'
+    || !/^[A-Za-z0-9_-]{1,64}$/.test(v.botScopeId) || !integer(v.updateId) || !integer(v.messageId,1)
+    || v.requestId !== telegramMissionRequestId(v.botScopeId, v.updateId) || typeof v.telegramSubject !== 'string'
+    || !/^[1-9][0-9]{0,15}$/.test(v.telegramSubject) || BigInt(v.telegramSubject) > 4503599627370495n || v.chatId !== v.telegramSubject
+    || !date(v.originVerifiedAt) || !date(v.originExpiresAt) || !date(v.receivedAt) || !date(v.updatedAt)
+    || Date.parse(v.originExpiresAt as string) <= Date.parse(v.originVerifiedAt as string)
+    || Date.parse(v.originExpiresAt as string) - Date.parse(v.originVerifiedAt as string) > 300_000
+    || !integer(v.revision) || !integer(v.attempts) || !['text','voice'].includes(String(v.kind))
+    || !['received','processing','submitted','needs_attention'].includes(String(v.state))
+    || !(v.objective === null || (typeof v.objective === 'string' && v.objective.length > 0 && v.objective.length <= 4000))
+    || !(v.voiceFileRef === null || (typeof v.voiceFileRef === 'string' && /^[A-Za-z0-9_-]{1,512}$/.test(v.voiceFileRef)))
+    || (v.kind === 'text' && (v.objective === null || v.voiceFileRef !== null)) || (v.kind === 'voice' && v.voiceFileRef === null)
+    || typeof v.eventSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.eventSha256)
+    || !(v.missionId === null || bounded(v.missionId)) || !(v.lastIssue === null || issues.includes(v.lastIssue as TelegramInboxIssue))
+    || (v.lease !== null && (!object(v.lease) || !bounded(v.lease.holder) || !integer(v.lease.generation,1)
+      || !date(v.lease.expiresAt) || !['submit','reconcile_only'].includes(String(v.lease.phase))))
+    || (v.state === 'processing') !== (v.lease !== null) || (v.state === 'submitted') !== (v.missionId !== null)) {
+    throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+  }
+  try { if (v.objective !== null && cleanObjective(v.objective) !== v.objective) throw new Error(); }
+  catch { throw new TelegramInboxError('telegram_inbox_invalid_repository_response'); }
+  return structuredClone(v) as unknown as TelegramInboxRecord;
+}
+/** Data parser only. It does not prove admission or grant sender authority. */
+export { parseRecord as readTelegramInboxRecord };
+/** No network/auth fallback and no Telegram reply. The injected verifier is mandatory. */
+export function createTelegramInbox(options: { client: MissionRpcClient;
+  verifyAdmission: (source: unknown) => Promise<VerifiedTelegramMissionAdmission | null> }): TelegramInbox {
+  if (typeof options.verifyAdmission !== 'function' || typeof options.client?.rpc !== 'function') invalid();
+  async function call(name: string, args: Record<string, unknown>): Promise<unknown> {
+    let result;
+    try { result = await options.client.rpc(`bras_droit_telegram_inbox_${name}`, args); }
+    catch { throw new TelegramInboxError('telegram_inbox_unavailable'); }
+    if (result.error) throw new TelegramInboxError(knownErrors.has(result.error.message) ? result.error.message : 'telegram_inbox_repository_failure');
+    return result.data;
+  }
+  function owner(ownerId: string) { if (!bounded(ownerId)) invalid(); }
+  function fenced(previous: TelegramInboxRecord): Record<string, unknown> {
+    owner(previous.ownerId);
+    if (!bounded(previous.id) || !previous.lease || !bounded(previous.lease.holder) || !integer(previous.revision)
+      || !integer(previous.lease.generation,1)) throw new TelegramInboxError('telegram_inbox_lease_lost');
+    return {p_owner_id: previous.ownerId, p_id: previous.id, p_holder: previous.lease.holder,
+      p_generation: previous.lease.generation, p_revision: previous.revision};
+  }
+  function correlated(value: unknown, ownerId: string, id?: string): TelegramInboxRecord {
+    const result = parseRecord(value);
+    if (result.ownerId !== ownerId || (id !== undefined && result.id !== id)) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+    return result;
+  }
+  function sameIdentity(before: TelegramInboxRecord, after: TelegramInboxRecord): boolean {
+    const keys: (keyof TelegramInboxRecord)[] = ['id','ownerId','botScopeId','telegramSubject','chatId','updateId','messageId',
+      'requestId','eventSha256','kind','voiceFileRef'];
+    return keys.every(key => before[key] === after[key])
+      && ['originVerifiedAt','originExpiresAt','receivedAt'].every(key =>
+        Date.parse(before[key as 'originVerifiedAt']) === Date.parse(after[key as 'originVerifiedAt']))
+      && before.attempts === after.attempts;
+  }
+  function checkedMutation(before: TelegramInboxRecord, value: unknown): TelegramInboxRecord {
+    const result = correlated(value,before.ownerId,before.id);
+    if (!sameIdentity(before,result)) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+    return result;
+  }
+  function response(condition: boolean): void {
+    if (!condition) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+  }
+  return {
+    async admit(source) {
+      let admission;
+      try { admission = await options.verifyAdmission(source); }
+      catch { throw new TelegramInboxError('telegram_inbox_admission_rejected'); }
+      if (!admission) throw new TelegramInboxError('telegram_inbox_admission_rejected');
+      const normalized = validateAdmission(admission);
+      const result = await call('admit', {p_id: randomUUID(), p_admission: normalized});
+      if (!object(result) || typeof result.replay !== 'boolean') throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+      const record = correlated(result.record, normalized.ownerId);
+      if (record.botScopeId !== normalized.botScopeId || record.updateId !== normalized.updateId || record.eventSha256 !== normalized.eventSha256
+        || record.telegramSubject !== normalized.telegramSubject || record.chatId !== normalized.chatId || record.messageId !== normalized.messageId
+        || record.kind !== normalized.input.kind
+        || (normalized.input.kind === 'text' && record.objective !== normalized.input.objective)
+        || (normalized.input.kind === 'voice' && record.voiceFileRef !== normalized.input.voiceFileRef)
+        || (!result.replay && (Date.parse(record.originVerifiedAt) !== Date.parse(normalized.originVerifiedAt)
+          || Date.parse(record.originExpiresAt) !== Date.parse(normalized.originExpiresAt)))) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+      return {record, replay: result.replay};
+    },
+    async get(ownerId, id) {
+      owner(ownerId); if (!bounded(id)) invalid();
+      const value = await call('get', {p_owner_id: ownerId, p_id: id});
+      return value === null ? null : correlated(value, ownerId, id);
+    },
+    async getByUpdate(ownerId, botScopeId, updateId) {
+      owner(ownerId); telegramMissionRequestId(botScopeId, updateId);
+      const value = await call('get_by_update', {p_owner_id: ownerId, p_bot_scope_id: botScopeId, p_update_id: updateId});
+      if (value === null) return null;
+      const result = correlated(value, ownerId);
+      if (result.botScopeId !== botScopeId || result.updateId !== updateId) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+      return result;
+    },
+    async claim(input) {
+      owner(input.ownerId); telegramMissionRequestId(input.botScopeId,0);
+      if (!bounded(input.holder) || !integer(input.leaseSeconds,1) || input.leaseSeconds > 60) invalid();
+      const value = await call('claim', {p_owner_id: input.ownerId, p_bot_scope_id: input.botScopeId,
+        p_holder: input.holder, p_lease_seconds: input.leaseSeconds});
+      if (value === null) return null;
+      const result = correlated(value,input.ownerId);
+      if (result.botScopeId !== input.botScopeId || result.lease?.holder !== input.holder) throw new TelegramInboxError('telegram_inbox_invalid_repository_response');
+      return result;
+    },
+    async attachTranscript(previous, input) {
+      previous = structuredClone(previous);
+      let objective: string;
+      try { objective = cleanObjective(input.objective); } catch { return invalid(); }
+      if (!/^[A-Za-z0-9_-]{1,512}$/.test(input.voiceFileRef)) invalid();
+      const result = checkedMutation(previous,await call('attach_transcript', {...fenced(previous), p_objective: objective, p_voice_file_ref: input.voiceFileRef}));
+      response(previous.kind === 'voice' && result.objective === objective && result.voiceFileRef === input.voiceFileRef
+        && result.state === 'processing' && result.missionId === null && result.lastIssue === previous.lastIssue
+        && result.revision === previous.revision + (previous.objective === null ? 1 : 0)
+        && !!result.lease && !!previous.lease && result.lease.holder === previous.lease.holder
+        && result.lease.generation === previous.lease.generation && result.lease.phase === previous.lease.phase
+        && Date.parse(result.lease.expiresAt) === Date.parse(previous.lease.expiresAt));
+      return result;
+    },
+    async attachMission(previous, missionId) {
+      previous = structuredClone(previous);
+      if (!bounded(missionId)) invalid();
+      const result = checkedMutation(previous,await call('attach_mission', {...fenced(previous), p_mission_id: missionId}));
+      response(result.missionId === missionId && result.state === 'submitted' && result.lease === null
+        && result.objective === previous.objective && result.revision === previous.revision + 1 && result.lastIssue === null);
+      return result;
+    },
+    async recordIssue(previous, input) {
+      previous = structuredClone(previous);
+      input = {...input};
+      if (!issues.includes(input.code) || (input.retryAfterSeconds !== undefined && (!integer(input.retryAfterSeconds,1) || input.retryAfterSeconds > 60))
+        || (input.retryAfterSeconds !== undefined && !['transcription_unavailable','submission_unknown','processing_failed'].includes(input.code))) invalid();
+      const fence = input.code === 'reply_missing' && previous.state === 'submitted' && previous.lease === null
+        ? {p_owner_id: previous.ownerId, p_id: previous.id, p_holder: null, p_generation: null, p_revision: previous.revision}
+        : fenced(previous);
+      const result = checkedMutation(previous,await call('record_issue', {...fence, p_code: input.code,
+        p_retry_after_seconds: input.retryAfterSeconds ?? null}));
+      const expectedState = input.code === 'reply_missing' ? 'submitted'
+        : input.retryAfterSeconds !== undefined && previous.attempts < 12 ? 'received' : 'needs_attention';
+      response(result.state === expectedState && result.missionId === previous.missionId && result.lease === null
+        && result.objective === previous.objective && result.revision === previous.revision + 1 && result.lastIssue === input.code);
+      return result;
+    },
+  };
+}

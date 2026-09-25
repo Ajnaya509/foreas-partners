@@ -99,8 +99,8 @@ export default {
           "linear-gradient(180deg, #0B0F1E 0%, #111528 50%, #0B0F1E 100%)",
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "SF Pro Display", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-geist-sans)", "SF Pro Display", "Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-foreas-inter)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-foreas-genos)", "var(--font-foreas-inter)", "sans-serif"],
       },
       fontSize: {
         "display-xxl": ["56px", { lineHeight: "60px", fontWeight: "900", letterSpacing: "-2px" }],

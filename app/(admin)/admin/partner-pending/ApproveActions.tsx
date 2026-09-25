@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { validatePartner, pausePartner } from "./actions";
-import { CheckCircle, PauseCircle, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle, PauseCircle, AlertCircle } from "lucide-react";
 
 interface ApproveActionsProps {
   partnerId: string;
@@ -57,8 +57,8 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
           <CheckCircle size={18} />
           {companyName} validé — statut actif.
         </div>
-        <p className="text-caption text-text-tertiary">
-          Le partenaire génère son lien Stripe Connect depuis son espace.
+        <p className="text-caption text-text-secondary">
+          Les conditions et l’état des versements restent à vérifier dans son espace.
         </p>
       </div>
     );
@@ -66,7 +66,7 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
 
   if (status === "paused") {
     return (
-      <div className="flex items-center gap-xs text-danger text-body-bold">
+      <div className="flex items-center gap-xs text-text-secondary text-body-bold">
         <PauseCircle size={18} />
         {companyName} mis en pause.
       </div>
@@ -83,7 +83,7 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
         </div>
         <button
           onClick={() => { setErrorMsg(""); setStatus("idle"); }}
-          className="self-start px-md py-xxs rounded-lg border border-glass-border text-caption font-bold text-text-secondary hover:text-text-primary transition-colors"
+          className="min-h-12 self-start px-md py-xxs rounded-lg border border-glass-border text-caption font-bold text-text-secondary hover:text-text-primary transition-colors"
         >
           Réessayer
         </button>
@@ -96,19 +96,15 @@ export function ApproveActions({ partnerId, companyName }: ApproveActionsProps) 
       <button
         onClick={handleApprove}
         disabled={isPending}
-        className="inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-success/10 border border-success/25 text-success text-caption font-bold hover:bg-success/20 transition-colors disabled:opacity-50"
+        className="min-h-12 inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-success/10 border border-success/25 text-success text-caption font-bold hover:bg-success/20 transition-colors disabled:opacity-50"
       >
-        {isPending ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : (
-          <CheckCircle size={14} />
-        )}
-        Valider
+        <CheckCircle size={14} />
+        {isPending ? 'Enregistrement…' : 'Activer le partenaire'}
       </button>
       <button
         onClick={handlePause}
         disabled={isPending}
-        className="inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-danger/10 border border-danger/25 text-danger text-caption font-bold hover:bg-danger/20 transition-colors disabled:opacity-50"
+        className="min-h-12 inline-flex items-center gap-xs px-lg py-sm rounded-lg bg-danger/10 border border-danger/25 text-danger text-caption font-bold hover:bg-danger/20 transition-colors disabled:opacity-50"
       >
         <PauseCircle size={14} />
         Mettre en pause

@@ -3,24 +3,11 @@
  * Bypass RLS via is_admin() helper côté Supabase.
  */
 import { createClient } from "@/lib/supabase/server";
+import { readAdminAccess } from "@/lib/admin-access";
 
 export async function isCurrentUserAdmin(): Promise<boolean> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data } = await supabase
-    .from("user_roles")
-    .select("role, is_active, revoked_at")
-    .eq("user_id", user.id)
-    .in("role", ["admin", "super_admin"])
-    .eq("is_active", true)
-    .is("revoked_at", null)
-    .maybeSingle();
-
-  return !!data;
+  const access = await readAdminAccess(await createClient());
+  return access.status === "allowed";
 }
 
 export async function getAdminGlobalKPIs() {

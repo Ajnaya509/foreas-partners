@@ -1,0 +1,100 @@
+import { canonical, hash } from "./model.js";
+import { codePolicyHash, readCodeProject, type CodeProject } from "./codePreparation.js";
+import type { ReadGrant } from "./readGrants.js";
+import type { JsonObject } from "./types.js";
+import { readSocialMetricsScope, socialMetricsScopeHash } from "./socialMetrics.js";
+
+/** Public descriptions of server-owned scopes. This module creates no authority. */
+export const GATEWAY_ACCESS_CAPABILITIES = ["stripe.balance.read", "n8n.workflow.read", "code.change.prepare", "stripe.payout.prepare", "social.metrics.read"] as const;
+export type GatewayAccessCapability = typeof GATEWAY_ACCESS_CAPABILITIES[number];
+export interface GatewayAccessScope { scopeHash: string; description: string; resources: JsonObject; }
+export interface GatewayAccessView { scopes: Partial<Record<GatewayAccessCapability, GatewayAccessScope>>; grants: ReadGrant[]; }
+export interface GatewayAccessIssue { capabilityId: GatewayAccessCapability; scopeHash: string; durationMinutes: number; }
+const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+const exact = (v: unknown, keys: string): v is Record<string, unknown> => object(v) && Object.keys(v).sort().join(",") === keys;
+const digest = (v: unknown): v is string => typeof v === "string" && /^[a-f0-9]{64}$/.test(v);
+const uuid = (v: unknown): v is string => typeof v === "string" && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v);
+const text = (v: unknown, max: number): v is string => typeof v === "string" && !!v.trim() && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);
+const integer = (v: unknown, max: number): v is number => Number.isSafeInteger(v) && Number(v) >= 1 && Number(v) <= max;
+const capability = (v: unknown): v is GatewayAccessCapability => typeof v === "string" && (GATEWAY_ACCESS_CAPABILITIES as readonly string[]).includes(v);
+const fail = (): never => { throw new Error("gateway_access_invalid"); };
+function date(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(v)
+    || !Number.isFinite(Date.parse(v))) return false;
+  const [y,m,d] = v.slice(0,10).split("-").map(Number);
+  return d <= new Date(Date.UTC(y,m,0)).getUTCDate();
+}
+export function readGatewayAccessIssue(value: unknown): GatewayAccessIssue {
+  if (!exact(value,"capabilityId,durationMinutes,scopeHash") || !capability(value.capabilityId)
+    || !digest(value.scopeHash) || !integer(value.durationMinutes,1440)) return fail();
+  return {capabilityId:value.capabilityId, scopeHash:value.scopeHash, durationMinutes:value.durationMinutes};
+}
+export function readGatewayAccessGrant(value: unknown, ownerId: string): ReadGrant {
+  if (!exact(value,"capabilityId,expiresAt,id,issuedAt,issuedBy,ownerId,revokedAt,scopeHash") || !uuid(value.id)
+    || value.ownerId !== ownerId || !text(value.issuedBy,256)
+    || typeof value.capabilityId !== "string" || !/^[a-z][a-z0-9_.]{2,95}$/.test(value.capabilityId)
+    || !digest(value.scopeHash) || !date(value.issuedAt) || !date(value.expiresAt)
+    || Date.parse(value.expiresAt) <= Date.parse(value.issuedAt)
+    || Date.parse(value.expiresAt) - Date.parse(value.issuedAt) > 86_400_000
+    || value.revokedAt !== null && (!date(value.revokedAt) || Date.parse(value.revokedAt) < Date.parse(value.issuedAt))) return fail();
+  // Historical grants can refer to a removed capability/scope. Keep them available for revocation.
+  return structuredClone(value) as unknown as ReadGrant;
+}
+function scope(id: GatewayAccessCapability, value: unknown, ownerId: string): GatewayAccessScope | null {
+  if (!exact(value,"description,resources,scopeHash") || !digest(value.scopeHash) || !text(value.description,2000)
+    || !object(value.resources) || Buffer.byteLength(canonical(value.resources)) > 24*1024) return fail();
+  const r=value.resources;
+  if(id === "social.metrics.read") {
+    const checked = readSocialMetricsScope(r);
+    if(checked.ownerId !== ownerId || socialMetricsScopeHash(checked) !== value.scopeHash)return fail();
+  } else if(id === "code.change.prepare") {
+    if(!exact(r,"applied,checks,contextPaths,editablePaths,imageId,maxModelCallsPerJob,projectId,revision")
+      || r.applied!==false || r.maxModelCallsPerJob!==3) return fail();
+    const project=readCodeProject({ownerId,id:r.projectId,revision:r.revision,imageId:r.imageId,
+      editablePaths:r.editablePaths,contextPaths:r.contextPaths,checks:r.checks} as CodeProject);
+    if(codePolicyHash(project)!==value.scopeHash)return fail();
+  } else if(id === "stripe.payout.prepare") {
+    if(!exact(r,"accountId,apiVersion,currency,destinationCountry,destinationFingerprintHash,destinationId,destinationLast4,livemode,maxAmountMinor,method,scope,sourceType")
+      || typeof r.accountId!=="string" || !/^acct_[A-Za-z0-9]{1,96}$/.test(r.accountId)
+      || typeof r.destinationId!=="string" || !/^ba_[A-Za-z0-9]{1,96}$/.test(r.destinationId)
+      || typeof r.destinationLast4!=="string" || !/^\d{4}$/.test(r.destinationLast4)
+      || typeof r.destinationCountry!=="string" || !/^[A-Z]{2}$/.test(r.destinationCountry)
+      || !digest(r.destinationFingerprintHash) || r.currency!=="eur" || typeof r.livemode!=="boolean"
+      || !["card","bank_account"].includes(String(r.sourceType)) || r.apiVersion!=="2026-08-26.dahlia"
+      || !integer(r.maxAmountMinor,100_000_000) || r.method!=="standard" || r.scope!=="platform")return fail();
+    const {livemode,...rest}=r;
+    if(hash({kind:"stripe.payout.readiness.v1",ownerId,...rest,expectedLivemode:livemode})!==value.scopeHash)return fail();
+  } else {
+    if(hash(r)!==value.scopeHash)return fail();
+    if(id === "stripe.balance.read") {
+      if(!exact(r,"accountId,currency,livemode,scope") || typeof r.accountId!=="string" || typeof r.currency!=="string"
+        || r.livemode!==true || r.scope!=="platform")return fail();
+      // Empty server settings describe an unavailable connection, never an actionable scope.
+      if(!r.accountId || !r.currency)return null;
+      if(!/^acct_[A-Za-z0-9]{1,96}$/.test(r.accountId) || !/^[a-z]{3}$/.test(r.currency))return fail();
+    } else {
+      if(!exact(r,"apiBaseUrl,instanceId,workflowIds") || typeof r.instanceId!=="string" || typeof r.apiBaseUrl!=="string"
+        || !Array.isArray(r.workflowIds) || r.workflowIds.length>500
+        || r.workflowIds.some(v=>typeof v!=="string" || !/^[A-Za-z0-9_-]{1,128}$/.test(v))
+        || new Set(r.workflowIds).size!==r.workflowIds.length)return fail();
+      if(!r.instanceId || !r.apiBaseUrl || !r.workflowIds.length)return null;
+      if(!/^[A-Za-z0-9_-]{1,128}$/.test(r.instanceId))return fail();
+      const url=new URL(r.apiBaseUrl);
+      if(url.protocol!=="https:" || url.username || url.password || url.search || url.hash
+        || !url.pathname.replace(/\/$/,"").endsWith("/api/v1"))return fail();
+    }
+  }
+  return structuredClone(value) as unknown as GatewayAccessScope;
+}
+export function readGatewayAccess(value: unknown, ownerId: string): GatewayAccessView {
+  if(!exact(value,"grants,scopes") || !object(value.scopes) || !Array.isArray(value.grants) || value.grants.length>500)return fail();
+  const scopes: GatewayAccessView["scopes"]={};
+  for(const [id, raw] of Object.entries(value.scopes)) {
+    if(!capability(id))return fail();
+    const parsed=scope(id,raw,ownerId);
+    if(parsed)scopes[id]=parsed;
+  }
+  const grants=value.grants.map(v=>readGatewayAccessGrant(v,ownerId));
+  if(new Set(grants.map(g=>g.id)).size!==grants.length)return fail();
+  return {scopes,grants};
+}

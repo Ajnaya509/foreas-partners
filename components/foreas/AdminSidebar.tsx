@@ -37,10 +37,10 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Vue d'ensemble", icon: LayoutDashboard },
   { href: "/admin/acquisition", label: "Acquisition & Funnel", icon: Target },
   { href: "/admin/chauffeurs", label: "Chauffeurs", icon: Users },
-  // ── MLM Partners ──
-  { href: "/admin/partners", label: "Partners MLM", icon: Network, badge: "live", badgeColor: "cyan" },
+  // ── Programme partenaire ──
+  { href: "/admin/partners", label: "Partenaires", icon: Network },
   { href: "/admin/partner-pending", label: "Candidatures", icon: UserPlus, badge: "valider", badgeColor: "warning" },
-  { href: "/admin/payouts", label: "Payouts MLM", icon: Coins },
+  { href: "/admin/payouts", label: "Commissions", icon: Coins },
   // ── Legacy + Finance ──
   { href: "/admin/partenaires", label: "Partenaires (legacy)", icon: Handshake },
   { href: "/admin/finance", label: "Finance", icon: Wallet },

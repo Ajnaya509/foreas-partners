@@ -1,5 +1,8 @@
+
+import {safePortalNext} from '@/lib/partner/navigation';
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { authPath, callbackFailure, destinationForRole } from "@/lib/auth-navigation";
 
 /**
  * Supabase Auth callback — gère :
@@ -13,20 +16,19 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const type = searchParams.get("type");
-  const next = searchParams.get("next") ?? "/partner";
+  const next = safePortalNext(searchParams.get("next"));
   const errorParam = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
   // Auth error from Supabase (e.g. expired link)
   if (errorParam) {
-    const msg = errorDescription ?? errorParam;
     return NextResponse.redirect(
-      `${origin}/login?error=link_expired&message=${encodeURIComponent(msg)}`
+      `${origin}${authPath("/login", next, { error: callbackFailure({ code: searchParams.get("error_code") ?? errorParam, message: errorDescription ?? "" }) })}`
     );
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=no_code`);
+    return NextResponse.redirect(`${origin}${authPath("/login", next, { error: "no_code" })}`);
   }
 
   const supabase = await createClient();
@@ -34,13 +36,8 @@ export async function GET(request: Request) {
 
   if (exchangeError) {
     return NextResponse.redirect(
-      `${origin}/login?error=auth_failed&message=${encodeURIComponent(exchangeError.message)}`
+      `${origin}${authPath("/login", next, { error: callbackFailure(exchangeError) })}`
     );
-  }
-
-  // Recovery flow → redirect to update password form
-  if (type === "recovery") {
-    return NextResponse.redirect(`${origin}/auth/update`);
   }
 
   // Smart routing by role
@@ -49,7 +46,11 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${origin}${authPath("/login", next, { error: "auth_failed" })}`);
+  }
+
+  if (type === "recovery") {
+    return NextResponse.redirect(`${origin}${authPath("/auth/update", next)}`);
   }
 
   // 1. Admin check
@@ -63,7 +64,13 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (adminRole) {
-    return NextResponse.redirect(`${origin}/admin`);
+    return NextResponse.redirect(`${origin}${destinationForRole(next, "admin")}`);
+  }
+
+  // A confirmed existing driver can complete a prepared partner admission.
+  // The destination layout still verifies admission and creates no access from the URL.
+  if (searchParams.has('next') && /^\/partner(\/|$)/.test(next)) {
+    return NextResponse.redirect(`${origin}${next}`);
   }
 
   // 2. Partner check
@@ -74,21 +81,22 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (partner) {
-    return NextResponse.redirect(`${origin}/partner`);
+    return NextResponse.redirect(`${origin}${destinationForRole(next, "partner")}`);
   }
 
   // 3. Driver check
-  const { data: driver } = await supabase
+  const { data: driver, error: driverError } = await supabase
     .from("drivers")
     .select("id")
-    .eq("id", user.id)
+    .eq("auth_user_id", user.id)
     .maybeSingle();
 
+  if (driverError) {
+    return NextResponse.redirect(`${origin}${authPath("/login", next, { error: "auth_failed" })}`);
+  }
   if (driver) {
-    return NextResponse.redirect(`${origin}/driver`);
+    return NextResponse.redirect(`${origin}${destinationForRole(next, "driver")}`);
   }
 
-  // Fallback — respect `next` param if it starts with /
-  const safeNext = next.startsWith("/") ? next : "/partner";
-  return NextResponse.redirect(`${origin}${safeNext}`);
+  return NextResponse.redirect(`${origin}${next}`);
 }

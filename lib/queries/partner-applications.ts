@@ -1,16 +1,8 @@
-/**
- * Candidatures partenaires (table `partner_applications`).
- *
- * Le SITE (foreas.xyz/devenir-partenaire) écrit ici via la clé anon
- * (RLS "anyone can apply"). L'ADMIN lit + met à jour via RLS is_admin().
- *
- * ⚠️ Jonction : avant ce module, l'admin ne lisait que `partners`. Un candidat
- * arrivé par le formulaire du site était donc INVISIBLE. Ce module recolle le flux.
- *
- * Cycle de vie : pending → approved (crée la ligne `partners` + code + invite,
- * fait côté Railway) | rejected (simple update ici).
- */
+/** Lectures administrateur des candidatures. Les admissions passent par le service protégé. */
 import { createClient } from "@/lib/supabase/server";
+import { isCurrentUserAdmin } from "@/lib/queries/admin";
+import { z } from "zod";
+const pendingSchema=z.array(z.object({id:z.string().uuid(),company_name:z.string().min(1),contact_name:z.string(),email:z.string().email(),phone:z.string().nullable(),siret:z.string().nullable(),message:z.string().nullable(),status:z.literal("pending"),created_at:z.string().refine(v=>Number.isFinite(Date.parse(v))),reviewed_at:z.string().nullable(),reviewed_by:z.string().nullable()}));
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 
@@ -30,6 +22,7 @@ export interface PartnerApplication {
 
 /** Candidatures en attente (les plus récentes d'abord). */
 export async function getPendingApplications(): Promise<PartnerApplication[]> {
+  if(!await isCurrentUserAdmin())throw new Error("Accès administrateur vérifié requis.");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("partner_applications")
@@ -39,12 +32,9 @@ export async function getPendingApplications(): Promise<PartnerApplication[]> {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    // RLS / réseau : on ne casse pas la page admin, on log et on renvoie vide.
-    console.error("[partner-applications] getPendingApplications:", error.message);
-    return [];
-  }
-  return (data ?? []) as PartnerApplication[];
+  if(error)throw new Error("La lecture des candidatures n’a pas été confirmée.");
+  return pendingSchema.parse(data);
+
 }
 
 /** Compteurs par statut (pour la vue globale). */

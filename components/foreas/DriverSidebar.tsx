@@ -35,12 +35,12 @@ const DRIVER_NAV: NavItem[] = [
 
 interface DriverSidebarProps {
   driverName?: string;
-  referralCode?: string;
+  referralCode?: string | null;
 }
 
 export function DriverSidebar({
   driverName = "Chauffeur",
-  referralCode = "FOREAS",
+  referralCode = null,
 }: DriverSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -61,10 +61,9 @@ export function DriverSidebar({
       <div className="mx-lg mb-lg p-md rounded-lg bg-glass-low border border-glass-border">
         <div className="text-caption text-text-tertiary">Chauffeur</div>
         <div className="text-body-bold text-text-primary mt-xxs">{driverName}</div>
-        <div className="mt-xs flex items-center gap-xs">
-          <span className="pulse-dot" />
-          <span className="font-mono text-caption text-violet-royal">{referralCode}</span>
-        </div>
+        {referralCode && <div className="mt-xs">
+          <span className="font-mono text-caption text-text-hero break-all">{referralCode}</span>
+        </div>}
       </div>
 
       <nav className="flex-1 px-md space-y-xxs overflow-y-auto scrollbar-thin">

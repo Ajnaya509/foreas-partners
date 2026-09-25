@@ -1,20 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import {safePortalNext} from '@/lib/partner/navigation';
+
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Mail, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { ForeasLogo } from "@/components/foreas/ForeasLogo";
-import { ForeasDivider } from "@/components/foreas/ForeasDivider";
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { cn } from "@/lib/utils";
+import { authPath, emailErrorMessage } from "@/lib/auth-navigation";
 
 type State = "idle" | "loading" | "sent" | "error";
 
-export default function AuthResetPage() {
+function AuthResetForm() {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const next = safePortalNext(useSearchParams().get("next"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +29,11 @@ export default function AuthResetPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: `${window.location.origin}${authPath("/auth/callback", next, { type: "recovery" })}`,
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        setErrorMsg(emailErrorMessage(error));
         setState("error");
         return;
       }
@@ -50,7 +54,7 @@ export default function AuthResetPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-lg bg-[#000000]">
+    <div className="auth-page">
       {/* Halos */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-violet-royal/[0.12] blur-[140px]" />
@@ -61,22 +65,24 @@ export default function AuthResetPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[400px]"
+        className="auth-container"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="auth-brand">
           <div className="flex justify-center mb-4">
             <ForeasLogo variant="full" color="#F8FAFC" height={32} />
           </div>
-          <ForeasDivider className="mx-auto max-w-[160px]" opacity={0.4} />
+          
           <div className="mt-4">
-            <Eyebrow>Sécurité · Récupération d&apos;accès</Eyebrow>
+            <Eyebrow>Accès FOREAS</Eyebrow>
           </div>
+          <p className="auth-brand-message">Toujours plus loin.</p>
+          <p className="auth-brand-note">Un lien reçu par e-mail te permettra de choisir un nouveau mot de passe.</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl overflow-hidden">
-          <div className="p-8">
+        <div className="auth-card">
+          <div className="auth-card-inner">
             <AnimatePresence mode="wait">
               {state === "sent" ? (
                 <motion.div
@@ -89,18 +95,18 @@ export default function AuthResetPage() {
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success/10 border border-success/20 mx-auto mb-5">
                     <CheckCircle2 size={28} className="text-success" />
                   </div>
-                  <h2 className="text-xl font-extrabold text-text-hero">Lien envoyé</h2>
+                  <h2 className="auth-title">Lien envoyé</h2>
                   <p className="mt-3 text-sm text-text-secondary leading-relaxed">
                     Un email a été envoyé à{" "}
                     <span className="text-text-primary font-semibold">{email}</span>.
                     Clique sur le lien pour définir un nouveau mot de passe.
-                    Il expire dans <span className="text-text-primary font-semibold">15 minutes</span>.
+                    Ouvre-le dans ce même navigateur. Il ne fonctionne qu’une fois.
                   </p>
                   <p className="mt-4 text-xs text-text-tertiary">
                     Pas reçu ? Vérifie tes spams ou réessaie dans quelques minutes.
                   </p>
                   <a
-                    href="/login"
+                    href={authPath("/login", next)}
                     className="mt-6 inline-flex items-center gap-2 text-sm text-violet-royal hover:text-cyan-electric transition-colors font-semibold"
                   >
                     <ArrowLeft size={14} />
@@ -110,11 +116,11 @@ export default function AuthResetPage() {
               ) : (
                 <motion.div key="form">
                   <div className="mb-7">
-                    <h1 className="text-2xl font-extrabold text-text-hero tracking-tight">
+                    <h1 className="auth-title">
                       Mot de passe oublié ?
                     </h1>
-                    <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                      Entre ton email. On t&apos;envoie un lien sécurisé pour réinitialiser ton accès.
+                    <p className="auth-subtitle">
+                      Entre ton email pour recevoir un lien. Ouvre-le dans ce même navigateur.
                     </p>
                   </div>
 
@@ -126,7 +132,7 @@ export default function AuthResetPage() {
                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <div className="flex items-start gap-2 p-3 rounded-xl bg-danger/[0.08] border border-danger/25 text-[13px] text-danger">
+                        <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-danger/[0.08] border border-danger/25 text-[13px] text-danger">
                           <AlertCircle size={14} className="shrink-0 mt-0.5" />
                           <span>{errorMsg}</span>
                         </div>
@@ -174,7 +180,7 @@ export default function AuthResetPage() {
                       ) : (
                         <>
                           <Mail size={16} />
-                          Envoyer le lien de récupération
+                          Recevoir un lien
                         </>
                       )}
                     </button>
@@ -186,7 +192,7 @@ export default function AuthResetPage() {
 
           <div className="px-8 py-4 border-t border-white/[0.06] bg-white/[0.02]">
             <a
-              href="/login"
+              href={authPath("/login", next)}
               className="flex items-center justify-center gap-2 text-[12px] text-text-tertiary hover:text-violet-royal transition-colors font-medium"
             >
               <ArrowLeft size={12} />
@@ -195,10 +201,14 @@ export default function AuthResetPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[10px] text-text-muted uppercase tracking-[0.2em] font-medium">
-          Coopérative d&apos;Activité et d&apos;Emploi · CAE VTC-T3P
+        <p className="auth-footer">
+          © 2026 FOREAS. Tous droits réservés.
         </p>
       </motion.div>
     </div>
   );
+}
+
+export default function AuthResetPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-black" />}><AuthResetForm /></Suspense>;
 }

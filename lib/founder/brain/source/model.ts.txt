@@ -1,0 +1,115 @@
+import { createHash, randomUUID } from "node:crypto";
+import { MissionValidationError } from "./errors.js";
+import type { AuthenticatedActor, Capability, Json, JsonObject, Mandate, Mission, MissionMode, MissionStep } from "./types.js";
+
+export function canonical(value: unknown, depth = 0): string {
+  if (depth > 12) throw new MissionValidationError("input_too_deep");
+  if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number" && Number.isFinite(value)) return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(v => canonical(v, depth + 1)).join(",")}]`;
+  if (typeof value === "object" && value && Object.getPrototypeOf(value) === Object.prototype) {
+    const keys = Object.keys(value).sort();
+    if (keys.some(k => ["__proto__", "constructor", "prototype"].includes(k))) throw new MissionValidationError("input_key_refused");
+    return `{${keys.map(k => `${JSON.stringify(k)}:${canonical((value as Record<string, unknown>)[k], depth + 1)}`).join(",")}}`;
+  }
+  throw new MissionValidationError("input_not_json");
+}
+export const hash = (value: unknown): string => createHash("sha256").update(canonical(value)).digest("hex");
+export const effectful = (capability: Capability): boolean => !["read", "prepare"].includes(capability.risk);
+export function inputHash(mission: Mission, step: MissionStep): string {
+  return hash({ ownerId: mission.ownerId, missionId: mission.id, planVersion: mission.planVersion,
+    stepId: step.id, capabilityId: step.capabilityId, capabilityVersion: step.capabilityVersion, input: step.input });
+}
+export function containsSecret(text: string): boolean {
+  return /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\bsk-ant-[A-Za-z0-9_-]+|-----BEGIN [A-Z ]*PRIVATE KEY-----|\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|\b\d{6,}:[A-Za-z0-9_-]{25,}/.test(text);
+}
+export function cleanObjective(value: unknown): string {
+  if (typeof value !== "string" || !value.trim() || value.length > 4_000) throw new MissionValidationError("objective_invalid");
+  if (containsSecret(value)) throw new MissionValidationError("secret_refused_use_secure_connection");
+  return value.trim();
+}
+
+/**
+ * Transport identity only, not authority or a permission to change an existing plan.
+ * requestHash keeps its historical plan binding. A retry returns the original record
+ * even when a model could propose different steps, without refreshing its mandate.
+ */
+export function sameMissionRequestIdentity(mission: Mission, request: {
+  actor: AuthenticatedActor; requestId: string; objective: string; mode: MissionMode;
+}): boolean {
+  try {
+    const actor = request.actor;
+    return typeof actor.ownerId === "string" && !!actor.ownerId
+      && typeof actor.subject === "string" && !!actor.subject
+      && ["admin", "telegram"].includes(actor.channel)
+      && ["prepare", "live", "test"].includes(request.mode)
+      && typeof request.requestId === "string" && /^[A-Za-z0-9_:.-]{1,160}$/.test(request.requestId)
+      && mission.ownerId === actor.ownerId && mission.actor.ownerId === actor.ownerId
+      && mission.actor.subject === actor.subject && mission.actor.channel === actor.channel
+      && mission.requestId === request.requestId && mission.mode === request.mode
+      && cleanObjective(mission.objective) === cleanObjective(request.objective);
+  } catch { return false; }
+}
+export class CapabilityRegistry {
+  private readonly entries = new Map<string, Capability>();
+  constructor(capabilities: Capability[]) {
+    for (const c of capabilities) {
+      if (!/^[a-z][a-z0-9_.]{2,95}$/.test(c.id) || !Number.isInteger(c.version) || c.version < 1 || this.entries.has(c.id)) {
+        throw new MissionValidationError("capability_invalid_or_duplicate");
+      }
+      this.entries.set(c.id, c);
+    }
+  }
+  get(id: string): Capability | undefined { return this.entries.get(id); }
+  describe() { return [...this.entries.values()].map(({ id, version, risk, description }) => ({ id, version, risk, description })); }
+}
+export interface StepSpec { id: string; capabilityId: string; input: JsonObject; dependsOn: string[]; }
+export function buildMission(options: {
+  actor: AuthenticatedActor; requestId: string; objective: string; mode: MissionMode;
+  mandate: Mandate; steps: StepSpec[]; registry: CapabilityRegistry; now?: Date; id?: string;
+}): Mission {
+  const { actor, requestId, mode, mandate, registry } = options;
+  const objective = cleanObjective(options.objective);
+  if (!/^[A-Za-z0-9_:.-]{1,160}$/.test(requestId) || !["prepare", "live", "test"].includes(mode)) throw new MissionValidationError("request_invalid");
+  if (!actor.ownerId || !actor.subject || !["telegram", "admin"].includes(actor.channel)) throw new MissionValidationError("actor_invalid");
+  if (!Array.isArray(options.steps) || !options.steps.length || options.steps.length > 12) throw new MissionValidationError("plan_size_invalid");
+  if (!Number.isFinite(Date.parse(mandate.expiresAt)) || mandate.capabilityIds.length > 64 || mandate.approvedInputHashes.length > 12) throw new MissionValidationError("mandate_invalid");
+  const ids = new Set<string>();
+  const steps: MissionStep[] = options.steps.map(spec => {
+    if (!/^[a-z][a-z0-9_-]{0,63}$/.test(spec.id) || ids.has(spec.id)) throw new MissionValidationError("step_id_invalid");
+    ids.add(spec.id);
+    const capability = registry.get(spec.capabilityId);
+    if (!capability) throw new MissionValidationError("capability_not_registered");
+    const input = capability.validate(spec.input);
+    const encoded = canonical(input);
+    if (encoded.length > 16_000 || containsSecret(encoded)) throw new MissionValidationError("input_sensitive_or_too_large");
+    if (!Array.isArray(spec.dependsOn) || spec.dependsOn.length > 11 || new Set(spec.dependsOn).size !== spec.dependsOn.length) throw new MissionValidationError("dependencies_invalid");
+    return { id: spec.id, capabilityId: capability.id, capabilityVersion: capability.version, input,
+      dependsOn: [...spec.dependsOn], status: "pending", attempts: 0 };
+  });
+  const done = new Set<string>();
+  for (let i = 0; i < steps.length; i++) {
+    for (const step of steps) {
+      if (step.dependsOn.some(id => !ids.has(id) || id === step.id)) throw new MissionValidationError("dependency_missing");
+      if (step.dependsOn.every(id => done.has(id))) done.add(step.id);
+    }
+  }
+  if (done.size !== steps.length) throw new MissionValidationError("dependency_cycle");
+  const at = (options.now ?? new Date()).toISOString();
+  // Authentication timestamps may change on a transport retry. Logical input must not.
+  const requestHash = hash({ ownerId: actor.ownerId, subject: actor.subject, channel: actor.channel, requestId, objective, mode,
+    steps: steps.map(({ id, capabilityId, capabilityVersion, input, dependsOn }) => ({ id, capabilityId, capabilityVersion, input, dependsOn })) });
+  return { id: options.id ?? randomUUID(), ownerId: actor.ownerId, requestId, requestHash, objective,
+    actor: structuredClone(actor), mode, planVersion: 1, status: "queued", createdAt: at, updatedAt: at,
+    mandate: structuredClone(mandate), steps };
+}
+
+/** Do not send raw supplier records, input hashes or internal authorizations to a client. */
+export function missionView(record: import("./types.js").StoredMission): JsonObject {
+  const m = record.mission;
+  return { id: m.id, objective: m.objective, status: m.status, control: record.control, mode: m.mode,
+    createdAt: m.createdAt, updatedAt: m.updatedAt, planVersion: m.planVersion,
+    steps: m.steps.map(s => ({ id: s.id, capability: s.capabilityId, status: s.status,
+      needs: (s.needs ?? []) as unknown as Json[], result: s.result ? s.result as unknown as Json : null,
+      error: s.error ?? null })) };
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import {safePortalNext} from '@/lib/partner/navigation';
+
 import { useState, Suspense, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,14 +12,12 @@ import {
   AlertCircle,
   AlertTriangle,
   Mail,
-  Lock,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { ForeasLogo } from "@/components/foreas/ForeasLogo";
-import { ForeasDivider } from "@/components/foreas/ForeasDivider";
 import { cn } from "@/lib/utils";
+import { authPath, emailErrorMessage, loginErrorMessage, portalRole } from "@/lib/auth-navigation";
 
 type LoginMode = "password" | "magic";
 type AuthRole = "admin" | "partner" | "driver" | null;
@@ -31,10 +31,10 @@ const ROLE_CONFIG = {
     badgeColor: "bg-danger/10 text-danger border-danger/30",
   },
   partner: {
-    eyebrow: "Espace Directeur · Coopérative VTC",
-    headline: "Ta flotte\nt'attend.",
-    subtitle: "Accède à tes commissions, tes chauffeurs, tes KPIs.",
-    badge: "Directeur",
+    eyebrow: "Espace partenaire",
+    headline: "Entre dans ton espace.",
+    subtitle: "Ton lien, tes supports et tes commissions sont ici.",
+    badge: null,
     badgeColor: "bg-violet-royal/10 text-violet-royal border-violet-royal/30",
   },
   driver: {
@@ -45,9 +45,9 @@ const ROLE_CONFIG = {
     badgeColor: "bg-cyan-electric/10 text-cyan-electric border-cyan-electric/30",
   },
   default: {
-    eyebrow: "Espace Partenaires · FOREAS",
-    headline: "Accède à\nton dashboard.",
-    subtitle: "Commissions, flotte, analytics — tout ici.",
+    eyebrow: "Espaces FOREAS",
+    headline: "Retrouve ton\nespace FOREAS.",
+    subtitle: "Connecte-toi au compte lié à ta candidature.",
     badge: null,
     badgeColor: "",
   },
@@ -56,15 +56,14 @@ const ROLE_CONFIG = {
 async function getSmartRedirect(
   supabase: ReturnType<typeof createClient>,
   userId: string,
-  next: string
-): Promise<string> {
-  // If next explicitly targets a portal, trust it
-  if (next.startsWith("/admin")) return "/admin";
-  if (next.startsWith("/partner")) return "/partner";
-  if (next.startsWith("/driver")) return "/driver";
+  next: string,
+  requestedDestination: boolean
+): Promise<string | null> {
+  // Preserve the requested local page; its server layout still checks access.
+  if (requestedDestination && portalRole(next)) return safePortalNext(next);
 
   // Check admin role
-  const { data: adminRole } = await supabase
+  const { data: adminRole, error: adminError } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
@@ -73,28 +72,31 @@ async function getSmartRedirect(
     .is("revoked_at", null)
     .maybeSingle();
 
+  if (adminError) return null;
   if (adminRole) return "/admin";
 
   // Check partner
-  const { data: partner } = await supabase
+  const { data: partner, error: partnerError } = await supabase
     .from("partners")
     .select("id")
     .eq("user_id", userId)
     .maybeSingle();
 
+  if (partnerError) return null;
   if (partner) return "/partner";
 
   // Check driver
-  const { data: driver } = await supabase
+  const { data: driver, error: driverError } = await supabase
     .from("drivers")
     .select("id")
-    .eq("id", userId)
+    .eq("auth_user_id", userId)
     .maybeSingle();
 
+  if (driverError) return null;
   if (driver) return "/driver";
 
   // Fallback
-  return next.startsWith("/") ? next : "/partner";
+  return safePortalNext(next);
 }
 
 function LoginForm() {
@@ -106,19 +108,23 @@ function LoginForm() {
   const [magicSent, setMagicSent] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/partner";
-  const roleParam = searchParams.get("role") as AuthRole;
+  const explicitRole = searchParams.get("role");
+  const requestedDestination = searchParams.has("next") || ["admin", "partner", "driver"].includes(explicitRole ?? "");
+  const next = safePortalNext(searchParams.get("next") ?? (explicitRole === "admin" ? "/admin" : explicitRole === "driver" ? "/driver" : "/partner"));
+  const roleParam = (searchParams.get("role") || (searchParams.has("next") ? portalRole(next) : null)) as AuthRole;
   const errorParam = searchParams.get("error");
+  const callbackMessage = loginErrorMessage(errorParam, searchParams.get("message"));
 
-  const config = roleParam
+  const roleConfig = roleParam
     ? ROLE_CONFIG[roleParam] ?? ROLE_CONFIG.default
     : ROLE_CONFIG.default;
+  const config = next.split(/[?#]/)[0] === "/admin/ajnaya"
+    ? { ...ROLE_CONFIG.admin, eyebrow: "Espace Ajnaya · Accès fondateur", headline: "Ton bras droit,\nà tes côtés.", subtitle: "Connecte-toi avec ton compte fondateur FOREAS.", badge: "Fondateur" }
+    : roleConfig;
 
   useEffect(() => {
-    if (errorParam === "access_denied") {
-      setError("Accès refusé. Ce compte n'a pas les permissions requises pour cette section.");
-    }
-  }, [errorParam]);
+    setError(callbackMessage);
+  }, [callbackMessage]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +161,12 @@ function LoginForm() {
         return;
       }
 
-      const redirect = await getSmartRedirect(supabase, user.id, next);
+      const redirect = await getSmartRedirect(supabase, user.id, next, requestedDestination);
+      if (!redirect) {
+        setError("Votre espace ne peut pas être vérifié. Réessayez dans un instant.");
+        setLoading(false);
+        return;
+      }
       router.push(redirect);
       router.refresh();
     } catch {
@@ -179,12 +190,13 @@ function LoginForm() {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}${authPath("/auth/callback", next)}`,
         },
       });
 
       if (otpError) {
-        setError(otpError.message);
+        setError(emailErrorMessage(otpError));
         setLoading(false);
         return;
       }
@@ -206,7 +218,7 @@ function LoginForm() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-lg bg-[#000000]">
+    <div className="auth-page">
       {/* Ambient halos — variant violet */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-[700px] h-[700px] rounded-full bg-violet-royal/[0.15] blur-[140px]" />
@@ -218,10 +230,10 @@ function LoginForm() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[420px]"
+        className="auth-container"
       >
         {/* Logo header */}
-        <div className="text-center mb-8">
+        <div className="auth-brand">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -230,7 +242,7 @@ function LoginForm() {
           >
             <ForeasLogo variant="full" color="#F8FAFC" height={36} />
           </motion.div>
-          <ForeasDivider className="mx-auto max-w-[180px]" opacity={0.5} />
+          
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -244,18 +256,20 @@ function LoginForm() {
               </span>
             )}
           </motion.div>
+          <p className="auth-brand-message">Toujours plus loin.</p>
+          <p className="auth-brand-note">Un espace clair pour avancer avec FOREAS.</p>
         </div>
 
         {/* Main card */}
-        <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl overflow-hidden">
+        <div className="auth-card">
           {/* Card inner */}
-          <div className="p-8">
+          <div className="auth-card-inner">
             {/* Headline */}
             <div className="mb-7">
-              <h1 className="text-[28px] font-extrabold text-text-hero leading-tight tracking-tight whitespace-pre-line">
+              <h1 className="auth-title whitespace-pre-line">
                 {config.headline}
               </h1>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+              <p className="auth-subtitle">
                 {config.subtitle}
               </p>
             </div>
@@ -269,7 +283,7 @@ function LoginForm() {
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-danger/[0.08] border border-danger/25 text-[13px] text-danger">
+                  <div role="alert" className="flex items-start gap-3 p-3 rounded-xl bg-danger/[0.08] border border-danger/25 text-[13px] text-danger">
                     <AlertCircle size={15} className="shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
@@ -306,7 +320,8 @@ function LoginForm() {
                   </div>
                   <h3 className="text-base font-bold text-text-hero">Lien envoyé</h3>
                   <p className="mt-2 text-sm text-text-secondary">
-                    Check <span className="text-text-primary font-semibold">{email}</span> — le lien expire dans 15 minutes.
+                    Consulte <span className="text-text-primary font-semibold">{email}</span>.
+                    Ouvre le dernier lien dans ce même navigateur. Il ne fonctionne qu’une fois.
                   </p>
                   <button
                     onClick={() => { setMagicSent(false); setMode("password"); }}
@@ -318,10 +333,12 @@ function LoginForm() {
               ) : (
                 <motion.div key="form">
                   {/* Mode toggle tabs */}
-                  <div className="flex gap-1 mb-6 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                  <div className="auth-mode-switch flex gap-1 mb-6 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                     {(["password", "magic"] as LoginMode[]).map((m) => (
                       <button
                         key={m}
+                        type="button"
+                        aria-pressed={mode === m}
                         onClick={() => { setMode(m); setError(null); }}
                         className={cn(
                           "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[12px] font-semibold transition-all duration-200",
@@ -330,11 +347,7 @@ function LoginForm() {
                             : "text-text-tertiary hover:text-text-secondary"
                         )}
                       >
-                        {m === "password" ? (
-                          <><Lock size={12} /> Mot de passe</>
-                        ) : (
-                          <><Sparkles size={12} /> Lien magique</>
-                        )}
+                        {m === "password" ? "Mot de passe" : "Lien e-mail"}
                       </button>
                     ))}
                   </div>
@@ -373,7 +386,7 @@ function LoginForm() {
                               Mot de passe
                             </label>
                             <a
-                              href="/auth/reset"
+                              href={authPath("/auth/reset", next)}
                               className="text-[11px] text-text-tertiary hover:text-violet-royal transition-colors font-medium"
                             >
                               Oublié ?
@@ -412,7 +425,7 @@ function LoginForm() {
                             </>
                           ) : (
                             <>
-                              Accéder au dashboard
+                              Ouvrir mon espace
                               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                             </>
                           )}
@@ -429,7 +442,7 @@ function LoginForm() {
                         className="space-y-4"
                       >
                         <p className="text-[13px] text-text-secondary leading-relaxed">
-                          On t&apos;envoie un lien sécurisé valable 15 minutes. Pas besoin de mot de passe.
+                          On t&apos;envoie un lien à usage unique. Ouvre-le dans ce même navigateur, sans passer de Chrome au navigateur intégré ou inversement.
                         </p>
                         <div>
                           <label className="block text-[11px] font-semibold text-text-tertiary mb-2 uppercase tracking-widest">
@@ -486,14 +499,14 @@ function LoginForm() {
           {/* Footer card */}
           <div className="px-8 py-5 border-t border-white/[0.06] bg-white/[0.02]">
             <p className="text-center text-[12px] text-text-tertiary">
-              Pas encore sur FOREAS ?{" "}
+              {roleParam === "partner" ? "Pas encore partenaire ?" : "Pas encore sur FOREAS ?"}{" "}
               <a
-                href="https://foreas.xyz/devenir-partenaire"
+                href={process.env.NEXT_PUBLIC_PARTNER_SIGNUP_URL || "https://www.foreas.xyz/partenariat"}
                 className="text-violet-royal font-semibold hover:text-cyan-electric transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Devenir directeur de groupe
+                Nous rejoindre
               </a>
             </p>
           </div>
@@ -504,9 +517,9 @@ function LoginForm() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-6 text-center text-[10px] text-text-muted uppercase tracking-[0.2em] font-medium"
+          className="auth-footer"
         >
-          Coopérative d&apos;Activité et d&apos;Emploi · CAE VTC-T3P · 100% légal
+          © 2026 FOREAS. Tous droits réservés.
         </motion.p>
       </motion.div>
     </div>

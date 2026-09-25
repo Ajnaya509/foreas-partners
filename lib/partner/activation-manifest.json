@@ -1,0 +1,176 @@
+{
+  "status": "prepared_not_published",
+  "version": "2026-09-13.1",
+  "items": [
+    {
+      "filename": "10_PLAQUETTE_CENTRE.pdf",
+      "id": "foreas-driver-centre-plaquette",
+      "title": "Présenter FOREAS à votre centre",
+      "description": "Deux pages pour une découverte de fin de formation.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "4bb688cc5890603c5039377748bc110e3fe7062961d89d35f1103e611c70b3a5",
+      "bytes": 281713
+    },
+    {
+      "filename": "11_PLAQUETTE_LOUEUR.pdf",
+      "id": "foreas-driver-loueur-plaquette",
+      "title": "Présenter FOREAS à vos chauffeurs",
+      "description": "Deux pages pour la remise des clés.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "2c572f85b9a91e0c3aa61c0ad3faf5fb86d10fe71595be9807c963dae26105f2",
+      "bytes": 286110
+    },
+    {
+      "filename": "12_PLAQUETTE_FLOTTE.pdf",
+      "id": "foreas-driver-flotte-plaquette",
+      "title": "Présenter FOREAS à votre réseau",
+      "description": "Deux pages pour distinguer recommandation et accès financés.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "d57063b7a70ca4bd9a98d3425b7422163dacbeede9077e8f6eea3f4ce115384f",
+      "bytes": 282408
+    },
+    {
+      "filename": "13_PLAQUETTE_CREATEUR.pdf",
+      "id": "foreas-driver-createur-plaquette",
+      "title": "Présenter une collaboration FOREAS",
+      "description": "Deux pages sur la recommandation et la création.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "ff84712e66b00b2c4634becf36bdb6e7474167bf3393d4b3e8dfddd6ea87d2f7",
+      "bytes": 284559
+    },
+    {
+      "filename": "14_REMUNERATION_ET_ATTRIBUTION.pdf",
+      "id": "foreas-activation-remuneration",
+      "title": "Comprendre la rémunération et l’attribution",
+      "description": "La règle 5/50, l’attribution et les états de vos commissions.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "6b96331d3b23209aa6d93e87b59ad6d1a1a3d68cf6cac61828b669150970b6c2",
+      "bytes": 229249
+    },
+    {
+      "filename": "15_PRESENTATION_FLOTTES.pdf",
+      "id": "foreas-driver-flotte-presentation",
+      "title": "Préparer un partenariat flotte",
+      "description": "Huit pages pour cadrer une démonstration et un pilote.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "d528f300a7494e3868506dbd9b0047c3f55f8a7c47c919e0bc922f66c95e7b8e",
+      "bytes": 347635
+    },
+    {
+      "filename": "16_CARNET_ACTIVATION.pdf",
+      "id": "foreas-activation-carnet",
+      "title": "Préparer votre première action",
+      "description": "Rendez-vous, création, pilote et notice chauffeur.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "f5be23d987032db2acaa56ba3a5f35c4697a7a25d60cebe7bea831992fbbc50b",
+      "bytes": 354746
+    },
+    {
+      "filename": "30_KIT_MARQUE_FOREAS.zip",
+      "id": "foreas-activation-marque",
+      "title": "Les fichiers de marque FOREAS",
+      "description": "Logos officiels inchangés et guide d’utilisation.",
+      "format": "zip",
+      "version": "2026-09-13.1",
+      "sha256": "1c2337f56b2d211b6c5d7169a54f0395f83a92d57c3c9317b7c2ead4ff341789",
+      "bytes": 310886
+    },
+    {
+      "filename": "17_ATELIER_CENTRE_PRESENTATION.pdf",
+      "id": "foreas-driver-centre-atelier",
+      "title": "Présenter FOREAS Driver en cinq minutes",
+      "description": "Cinq pages à projeter avec un cas fictif et une découverte guidée.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "b7faec11190b0864cec7bbf403e7cedcffefc828f101311fe6f48484b4e7a06b",
+      "bytes": 239160
+    },
+    {
+      "filename": "18_ATELIER_CENTRE_ANIMATEUR.pdf",
+      "id": "foreas-driver-centre-animateur",
+      "title": "Animer la découverte FOREAS Driver",
+      "description": "Le déroulé de cinq minutes, la préparation et les réponses utiles.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "e4de502bb783c9e91e443a9a5aeb41152cef000d8607b41d189da73efcb50dcb",
+      "bytes": 228043
+    },
+    {
+      "filename": "19_ATELIER_CENTRE_EXERCICE.pdf",
+      "id": "foreas-driver-centre-exercice",
+      "title": "Lire une proposition : exercice et corrigé",
+      "description": "Une fiche élève et son corrigé, avec approche et retour à vide.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "5cf4496df109564fe54f0e7cf8de19d03c7465469d6db834c3816a0902ba0c1c",
+      "bytes": 232014
+    },
+    {
+      "filename": "20_RELEVE_FICTIF_EXPLIQUE.pdf",
+      "id": "foreas-activation-releve-exemple",
+      "title": "Comprendre votre relevé : un exemple fictif",
+      "description": "Deux pages pour lire les réservations, transferts et corrections sans double compte.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "c4db923e3f125d7d50f430736026d146488c765a2511c33b087b4ba821c776ef",
+      "bytes": 246420
+    },
+    {
+      "filename": "21_FAQ_PARTENAIRE.pdf",
+      "id": "foreas-activation-faq",
+      "title": "Les réponses utiles au partenaire",
+      "description": "Douze réponses courtes sur l’offre, les commissions, les données et le départ.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "6e60e428502db334e630664bd80866a134209e99e7b649e2f93cfaa9d3f6051b",
+      "bytes": 224178
+    },
+    {
+      "filename": "22_NOTICE_CANDIDATURE.pdf",
+      "id": "foreas-activation-candidature",
+      "title": "Préparer et suivre votre candidature",
+      "description": "Les quatre renseignements de départ, les précisions facultatives et le suivi du dossier.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "7e4474317489c5a0aead6b2b3c9119334af05046289b82a2ebad4b884840442b",
+      "bytes": 50092
+    },
+    {
+      "filename": "23_GUIDE_DEMARRAGE_PARTENAIRE.pdf",
+      "id": "foreas-activation-demarrage-partenaire",
+      "title": "Vos premiers pas dans l’espace partenaire",
+      "description": "Deux pages pour trouver les quatre rubriques, partager et passer de l’app au navigateur.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "908375cd67781ea8a03ae0c69e020a75bd80a3a74ce8baef16e7d7f0e499f315",
+      "bytes": 253739
+    },
+    {
+      "filename": "24_DEMARRAGE_CHAUFFEUR_PAR_APPAREIL.pdf",
+      "id": "foreas-activation-demarrage-chauffeur",
+      "title": "Commencer sur Android ou iPhone",
+      "description": "Une page par appareil pour garder le code, retrouver le compte et gérer le renouvellement.",
+      "format": "pdf",
+      "version": "2026-09-13.1",
+      "sha256": "03440409a69f29109e5af30f40ffc7523201425b61dc3fe47e3f1d3eef637caf",
+      "bytes": 289933
+    },
+    {
+      "filename": "25_CARTES_ET_VISUELS_FOREAS.zip",
+      "id": "foreas-activation-cartes-visuels",
+      "title": "Votre carte et vos visuels à partager",
+      "description": "Un outil local pour placer votre lien sur une carte A5, une publication ou une story.",
+      "format": "zip",
+      "version": "2026-09-13.1",
+      "sha256": "ade42c94bf7105467ed3c08f8a8717f851156206f8be001789a74d7d63092a81",
+      "bytes": 1078086
+    }
+  ]
+}

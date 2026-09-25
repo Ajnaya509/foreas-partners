@@ -1,0 +1,131 @@
+import { canonical, hash } from "./model.js";
+import type { JsonObject } from "./types.js";
+
+export const SOCIAL_METRICS_CAPABILITY = "social.metrics.read";
+export interface SocialMetricsScope {
+  ownerId: string; robotRef: string; purpose: "FOREAS_HUNTER" | "PRIVATE_HUNTER";
+  driverId: string | null; providerAccountRef: string; channel: "email"; timezone: string;
+  revision: number; environment: "live" | "test";
+}
+export interface SocialMetricsRequest {
+  requestId: string; missionId: string; stepId: string; robotRef: string; calendarDate: string; scopeHash: string;
+}
+export type SocialMetricsErrorCode = "scope_unknown" | "denied" | "unavailable" | "invalid";
+export class SocialMetricsError extends Error {
+  constructor(readonly code: SocialMetricsErrorCode) { super(`social_read_${code}`); this.name = "SocialMetricsError"; }
+}
+const fail = (): never => { throw new SocialMetricsError("invalid"); };
+export const socialExact = (v: unknown, keys: string): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v))
+  && Object.keys(v).sort().join(",") === keys;
+export const socialId = (v: unknown): v is string => typeof v === "string" && v === v.trim() && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(v);
+const robot = (v: unknown): v is string => typeof v === "string" && v === v.trim() && /^[a-z][a-z0-9_.:-]{2,127}$/.test(v);
+const uuid = (v: unknown): v is string => typeof v === "string" && v === v.trim() && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v);
+const count = (v: unknown, max = Number.MAX_SAFE_INTEGER): v is number => Number.isSafeInteger(v) && Number(v) >= 0 && Number(v) <= max;
+export function socialCalendarDate(v: unknown): v is string {
+  return typeof v === "string" && /^(?:20|21)\d{2}-\d{2}-\d{2}$/.test(v)
+    && Number.isFinite(Date.parse(v + "T00:00:00Z")) && new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v;
+}
+export function socialDateAt(epoch: number, timezone: string): string {
+  if (!Number.isSafeInteger(epoch) || !Number.isFinite(new Date(epoch).getTime())) return fail();
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, calendar: "iso8601", numberingSystem: "latn",
+      year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(epoch);
+    return ["year", "month", "day"].map(key => parts.find(p => p.type === key)!.value).join("-");
+  } catch { return fail(); }
+}
+export function readSocialMetricsScope(value: unknown): SocialMetricsScope {
+  if (!socialExact(value, "channel,driverId,environment,ownerId,providerAccountRef,purpose,revision,robotRef,timezone")
+    || !socialId(value.ownerId) || !robot(value.robotRef) || !socialId(value.providerAccountRef)
+    || value.channel !== "email" || !["live", "test"].includes(String(value.environment))
+    || !count(value.revision) || value.revision < 1
+    || !(value.purpose === "FOREAS_HUNTER" && value.driverId === null || value.purpose === "PRIVATE_HUNTER" && uuid(value.driverId))
+    || typeof value.timezone !== "string" || value.timezone.length > 80
+    || !/^[A-Za-z][A-Za-z0-9_+/-]*$/.test(value.timezone)) return fail();
+  socialDateAt(0, value.timezone);
+  return structuredClone(value) as unknown as SocialMetricsScope;
+}
+export function socialMetricsScopeHash(raw: unknown): string {
+  return hash({ kind: "social.metrics.scope.v1", ...readSocialMetricsScope(raw) });
+}
+export function readSocialMetricsInput(raw: unknown): JsonObject & { robotRef: string; calendarDate: string } {
+  if (!socialExact(raw, "calendarDate,robotRef") || !robot(raw.robotRef) || !socialCalendarDate(raw.calendarDate)) return fail();
+  return { robotRef: raw.robotRef, calendarDate: raw.calendarDate };
+}
+export function readSocialMetricsRequest(raw: unknown): SocialMetricsRequest {
+  if (!socialExact(raw, "calendarDate,missionId,requestId,robotRef,scopeHash,stepId") || !uuid(raw.requestId)
+    || !socialId(raw.missionId) || !socialId(raw.stepId) || !robot(raw.robotRef) || !socialCalendarDate(raw.calendarDate)
+    || typeof raw.scopeHash !== "string" || raw.scopeHash.length !== 64 || !/^[a-f0-9]{64}$/.test(raw.scopeHash)) return fail();
+  return structuredClone(raw) as unknown as SocialMetricsRequest;
+}
+function timestamp(raw: unknown): number {
+  if (typeof raw !== "string" || raw !== raw.trim() || !/^(?:20|21)\d{2}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)$/.test(raw)
+    || !socialCalendarDate(raw.slice(0, 10)) || !Number.isFinite(Date.parse(raw))) return fail();
+  return Date.parse(raw);
+}
+const METRIC_KEYS = "calendarDate,configuredQuota,consumedSlots,counts,coverage,effectiveQuota,globalGate,limitations,messageQuotaMaximum,observedAt,periodEnd,periodStart,proofRefs,reservedSlots,scopeQuotaMaximum,scopeRef,sourceRef,timezone,uncertainSlots";
+const UNKNOWN_COUNTS = ["prospectsSelected", "draftsPrepared", "deliveryConfirmed", "authenticatedReplies", "usefulReplies", "conversionsAttributed"] as const;
+export const SOCIAL_METRICS_LIMITATIONS = [
+  "Ce registre couvre uniquement ce robot et ses messages email enregistrés.",
+  "Une adresse déclarée externe ne certifie pas une personne ni un prospect réel.",
+  "L’acceptation fournisseur ne prouve ni la livraison, ni la lecture, ni une réponse.",
+  "La journée est celle où l’acceptation a été observée par le serveur.",
+  "Les places réservées et incertaines peuvent venir de jours précédents.",
+  "Les anciens historiques, les autres robots et les autres canaux ne sont pas couverts.",
+] as const;
+export interface SocialMetricsObservation {
+  scope: SocialMetricsScope; request: SocialMetricsRequest; metrics: JsonObject; receivedAt: string;
+}
+/** Parse only an authenticated, bound response. This function grants no access. */
+export function readSocialMetricsObservation(raw: unknown, expected: {
+  scope: SocialMetricsScope; request: SocialMetricsRequest; startedAt: number; receivedAt: number;
+}): SocialMetricsObservation {
+  const scope = readSocialMetricsScope(expected.scope), request = readSocialMetricsRequest(expected.request);
+  const { startedAt, receivedAt } = expected;
+  if (!count(startedAt) || !count(receivedAt) || receivedAt < startedAt || receivedAt - startedAt > 15_000
+    || request.robotRef !== scope.robotRef || request.scopeHash !== socialMetricsScopeHash(scope)
+    || !socialExact(raw, "metrics,missionId,requestId,scope,scopeHash,stepId,version") || raw.version !== 1
+    || ["requestId", "missionId", "stepId", "scopeHash"].some(k => raw[k] !== request[k as keyof SocialMetricsRequest])
+    || canonical(readSocialMetricsScope(raw.scope)) !== canonical(scope)) return fail();
+  const m = raw.metrics;
+  if (!socialExact(m, METRIC_KEYS) || m.sourceRef !== "app_social_dispatches" || m.scopeRef !== scope.robotRef
+    || m.timezone !== scope.timezone || m.calendarDate !== request.calendarDate || m.coverage !== "partial"
+    // No open gate contract has been received yet. A future opening needs its own reviewed version.
+    || m.globalGate !== "LOCAL_REVIEW_ONLY" || m.effectiveQuota !== 0
+    || !count(m.configuredQuota, 100) || !count(m.scopeQuotaMaximum, 100) || !count(m.messageQuotaMaximum, 100)
+    || m.scopeQuotaMaximum > Math.min(m.configuredQuota, m.messageQuotaMaximum)
+    || scope.purpose === "PRIVATE_HUNTER" && m.scopeQuotaMaximum > 20
+    || ![m.consumedSlots, m.reservedSlots, m.uncertainSlots].every(v => count(v))
+    || !Number.isSafeInteger(Number(m.consumedSlots) + Number(m.reservedSlots) + Number(m.uncertainSlots))
+    || !socialExact(m.counts, "authenticatedReplies,conversionsAttributed,deliveryConfirmed,distinctExternalProspectsContacted,draftsPrepared,prospectsSelected,providerAcceptedMessages,usefulReplies")
+    || !UNKNOWN_COUNTS.every(k => (m.counts as Record<string, unknown>)[k] === null)) return fail();
+  const counts = m.counts as Record<string, unknown>;
+  if (!count(counts.providerAcceptedMessages) || !count(counts.distinctExternalProspectsContacted)
+    || counts.distinctExternalProspectsContacted > counts.providerAcceptedMessages
+    || counts.providerAcceptedMessages > Number(m.consumedSlots)) return fail();
+  const observed = timestamp(m.observedAt), start = timestamp(m.periodStart), end = timestamp(m.periodEnd);
+  const today = socialDateAt(observed, scope.timezone);
+  const age = (Date.parse(today) - Date.parse(request.calendarDate)) / 86_400_000;
+  const nextDate = new Date(Date.parse(request.calendarDate) + 86_400_000).toISOString().slice(0, 10);
+  if (observed < startedAt - 5_000 || observed > receivedAt + 5_000 || age < 0 || age > 31
+    || end <= start || end - start > 172_800_000
+    || [m.periodStart, m.periodEnd].some(v => /\.(\d*[1-9]\d*)/.test(String(v)))
+    // First instant of each civil day. No assumed 24-hour day, UTC offset or phone timezone.
+    || socialDateAt(start, scope.timezone) !== request.calendarDate || socialDateAt(start - 1, scope.timezone) === request.calendarDate
+    || socialDateAt(end, scope.timezone) !== nextDate || socialDateAt(end - 1, scope.timezone) !== request.calendarDate
+    || !Array.isArray(m.limitations) || m.limitations.length > 20
+    || m.limitations.some(v => typeof v !== "string" || v.length > 1000)
+    || !Array.isArray(m.proofRefs) || m.proofRefs.length !== 1
+    || m.proofRefs[0] !== `app_social_dispatches:${scope.robotRef}:${request.calendarDate}`) return fail();
+  // Free text returned by a remote service is never replayed as instructions or commercial claims.
+  const metrics: JsonObject = { ...structuredClone(m) as JsonObject, limitations: [...SOCIAL_METRICS_LIMITATIONS] };
+  return { scope, request, metrics, receivedAt: new Date(receivedAt).toISOString() };
+}
+export function socialMetricsSummary(observation: SocialMetricsObservation): string {
+  const m = observation.metrics, c = m.counts as JsonObject;
+  // Fits the existing Telegram renderer's 230-character limit, even with three safe-integer maxima.
+  return `${observation.request.calendarDate} : ${c.providerAcceptedMessages} messages acceptés par le fournisseur, `
+    + `${c.distinctExternalProspectsContacted} adresses externes distinctes déclarées. `
+    + `Livraison et vrais prospects non certifiés. `
+    + `${m.uncertainSlots} places incertaines, jours anciens inclus.`;
+}

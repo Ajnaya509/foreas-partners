@@ -1,0 +1,411 @@
+{
+  "version": "2026-09-13.1",
+  "prepared_at": "2026-09-12T23:11:02.995619+00:00",
+  "author": "/root",
+  "scope": "Réédition des 17 supports : conditions courantes 12.1 et édition statique 13.1. Limites, images et exemples conservés ; aucune publication.",
+  "documents": [
+    {
+      "stem": "10_PLAQUETTE_CENTRE",
+      "title": "Centres de formation · Un outil à découvrir après la formation",
+      "kit_ids": [
+        "KIT02"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "10_PLAQUETTE_CENTRE.html",
+      "editable_source": "10_PLAQUETTE_CENTRE.md",
+      "pdf": "10_PLAQUETTE_CENTRE.pdf",
+      "publication_url": null,
+      "sha256_html": "ddb1c0ed193cb38edd3d1555f4ae349ae8af2781e0aa96b41ca79b3b64ce913d",
+      "sha256_pdf": "4bb688cc5890603c5039377748bc110e3fe7062961d89d35f1103e611c70b3a5"
+    },
+    {
+      "stem": "11_PLAQUETTE_LOUEUR",
+      "title": "Loueurs · Ajouter une découverte utile à la remise des clés",
+      "kit_ids": [
+        "KIT02"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "11_PLAQUETTE_LOUEUR.html",
+      "editable_source": "11_PLAQUETTE_LOUEUR.md",
+      "pdf": "11_PLAQUETTE_LOUEUR.pdf",
+      "publication_url": null,
+      "sha256_html": "788463e21e0cb6d345064549ab34691b6d4c65c8ca994de28fa16d511b7dda49",
+      "sha256_pdf": "2c572f85b9a91e0c3aa61c0ad3faf5fb86d10fe71595be9807c963dae26105f2"
+    },
+    {
+      "stem": "12_PLAQUETTE_FLOTTE",
+      "title": "Flottes et réseaux · Une recommandation adaptée à votre métier",
+      "kit_ids": [
+        "KIT02"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "12_PLAQUETTE_FLOTTE.html",
+      "editable_source": "12_PLAQUETTE_FLOTTE.md",
+      "pdf": "12_PLAQUETTE_FLOTTE.pdf",
+      "publication_url": null,
+      "sha256_html": "69bb80219003715e444cc49c12f82db29ea6d7a69268770e25ea1089d8d8c87b",
+      "sha256_pdf": "d57063b7a70ca4bd9a98d3425b7422163dacbeede9077e8f6eea3f4ce115384f"
+    },
+    {
+      "stem": "13_PLAQUETTE_CREATEUR",
+      "title": "Créateurs et communautés · Une démonstration utile à votre audience",
+      "kit_ids": [
+        "KIT02",
+        "KIT17"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "13_PLAQUETTE_CREATEUR.html",
+      "editable_source": "13_PLAQUETTE_CREATEUR.md",
+      "pdf": "13_PLAQUETTE_CREATEUR.pdf",
+      "publication_url": null,
+      "sha256_html": "fc133bf4a9deacc3d55f263d4dfc9ff2aa4e6f8289e556a155534d3ddccede50",
+      "sha256_pdf": "ff84712e66b00b2c4634becf36bdb6e7474167bf3393d4b3e8dfddd6ea87d2f7"
+    },
+    {
+      "stem": "14_REMUNERATION_ET_ATTRIBUTION",
+      "title": "Comprendre la rémunération et l’attribution",
+      "kit_ids": [
+        "KIT06"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "14_REMUNERATION_ET_ATTRIBUTION.html",
+      "editable_source": "14_REMUNERATION_ET_ATTRIBUTION.md",
+      "pdf": "14_REMUNERATION_ET_ATTRIBUTION.pdf",
+      "publication_url": null,
+      "sha256_html": "c8141f6efc2f26450cda75a075c8ee3e0937b4e44ae7b2ab9633c0e1a8d60b88",
+      "sha256_pdf": "6b96331d3b23209aa6d93e87b59ad6d1a1a3d68cf6cac61828b669150970b6c2"
+    },
+    {
+      "stem": "15_PRESENTATION_FLOTTES",
+      "title": "FOREAS Driver · Présentation flottes et réseaux",
+      "kit_ids": [
+        "KIT14"
+      ],
+      "landscape": true,
+      "page_count": 8,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "15_PRESENTATION_FLOTTES.html",
+      "editable_source": "15_PRESENTATION_FLOTTES.md",
+      "pdf": "15_PRESENTATION_FLOTTES.pdf",
+      "publication_url": null,
+      "sha256_html": "b18319344bb7993b1d0fee69c77e75d07bedb0a43721e3a713168cf921ba2510",
+      "sha256_pdf": "d528f300a7494e3868506dbd9b0047c3f55f8a7c47c919e0bc922f66c95e7b8e"
+    },
+    {
+      "stem": "16_CARNET_ACTIVATION",
+      "title": "Rendez-vous, création, pilote et notice chauffeur",
+      "kit_ids": [
+        "KIT10",
+        "KIT15",
+        "KIT16",
+        "KIT17",
+        "KIT23"
+      ],
+      "landscape": false,
+      "page_count": 6,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "16_CARNET_ACTIVATION.html",
+      "editable_source": "16_CARNET_ACTIVATION.md",
+      "pdf": "16_CARNET_ACTIVATION.pdf",
+      "publication_url": null,
+      "sha256_html": "ae5eeb19c279b94fd3a40c9169f3f020cd8bb879367984d0eaa442453592e8ae",
+      "sha256_pdf": "f5be23d987032db2acaa56ba3a5f35c4697a7a25d60cebe7bea831992fbbc50b"
+    },
+    {
+      "stem": "17_ATELIER_CENTRE_PRESENTATION",
+      "title": "Présenter FOREAS Driver en cinq minutes",
+      "kit_ids": [
+        "KIT11"
+      ],
+      "landscape": true,
+      "page_count": 5,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "17_ATELIER_CENTRE_PRESENTATION.html",
+      "editable_source": "17_ATELIER_CENTRE_PRESENTATION.md",
+      "pdf": "17_ATELIER_CENTRE_PRESENTATION.pdf",
+      "publication_url": null,
+      "sha256_html": "75ee1339e4b829584b49799e3b00204837ff60e786bc5c497b299e06f114180b",
+      "sha256_pdf": "b7faec11190b0864cec7bbf403e7cedcffefc828f101311fe6f48484b4e7a06b"
+    },
+    {
+      "stem": "18_ATELIER_CENTRE_ANIMATEUR",
+      "title": "Animer la découverte FOREAS Driver",
+      "kit_ids": [
+        "KIT11"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "18_ATELIER_CENTRE_ANIMATEUR.html",
+      "editable_source": "18_ATELIER_CENTRE_ANIMATEUR.md",
+      "pdf": "18_ATELIER_CENTRE_ANIMATEUR.pdf",
+      "publication_url": null,
+      "sha256_html": "0d905c1b9534a433b9863ec1d6b014b6f22330ba7acc7894d0a0b9c1b1be73fb",
+      "sha256_pdf": "e4de502bb783c9e91e443a9a5aeb41152cef000d8607b41d189da73efcb50dcb"
+    },
+    {
+      "stem": "19_ATELIER_CENTRE_EXERCICE",
+      "title": "Lire une proposition : exercice et corrigé",
+      "kit_ids": [
+        "KIT11"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "19_ATELIER_CENTRE_EXERCICE.html",
+      "editable_source": "19_ATELIER_CENTRE_EXERCICE.md",
+      "pdf": "19_ATELIER_CENTRE_EXERCICE.pdf",
+      "publication_url": null,
+      "sha256_html": "7204aee307515c941b0c80bfda1469d59e14e761b82e1016d73e6cb8dba59767",
+      "sha256_pdf": "5cf4496df109564fe54f0e7cf8de19d03c7465469d6db834c3816a0902ba0c1c"
+    },
+    {
+      "stem": "20_RELEVE_FICTIF_EXPLIQUE",
+      "title": "Comprendre votre relevé : un exemple fictif",
+      "kit_ids": [
+        "KIT31"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "20_RELEVE_FICTIF_EXPLIQUE.html",
+      "editable_source": "20_RELEVE_FICTIF_EXPLIQUE.md",
+      "pdf": "20_RELEVE_FICTIF_EXPLIQUE.pdf",
+      "publication_url": null,
+      "sha256_html": "b321fd231db00977ac6b60fa51d79c4d3d89403edbb733e4c3e221315907c9c7",
+      "sha256_pdf": "c4db923e3f125d7d50f430736026d146488c765a2511c33b087b4ba821c776ef"
+    },
+    {
+      "stem": "21_FAQ_PARTENAIRE",
+      "title": "Les réponses utiles au partenaire",
+      "kit_ids": [
+        "KIT05"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "21_FAQ_PARTENAIRE.html",
+      "editable_source": "21_FAQ_PARTENAIRE.md",
+      "pdf": "21_FAQ_PARTENAIRE.pdf",
+      "publication_url": null,
+      "sha256_html": "bd6782c10193f29d43645f667a9263d90784ba4ad1d6d77a68ae097404a1761c",
+      "sha256_pdf": "6e60e428502db334e630664bd80866a134209e99e7b649e2f93cfaa9d3f6051b"
+    },
+    {
+      "stem": "22_NOTICE_CANDIDATURE",
+      "title": "Préparer et suivre votre candidature",
+      "kit_ids": [
+        "KIT08"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "22_NOTICE_CANDIDATURE.html",
+      "editable_source": "22_NOTICE_CANDIDATURE.md",
+      "pdf": "22_NOTICE_CANDIDATURE.pdf",
+      "publication_url": null,
+      "sha256_html": "4a7ba4a796c34e878cf1832b4c4ff52804038b219fad6dbf9839bb9be3f25374",
+      "sha256_pdf": "7e4474317489c5a0aead6b2b3c9119334af05046289b82a2ebad4b884840442b"
+    },
+    {
+      "stem": "23_GUIDE_DEMARRAGE_PARTENAIRE",
+      "title": "Vos premiers pas dans l’espace partenaire",
+      "kit_ids": [
+        "KIT24"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "23_GUIDE_DEMARRAGE_PARTENAIRE.html",
+      "editable_source": "23_GUIDE_DEMARRAGE_PARTENAIRE.md",
+      "pdf": "23_GUIDE_DEMARRAGE_PARTENAIRE.pdf",
+      "publication_url": null,
+      "sha256_html": "7d673ce7b69180fed729aea34e4c170462b27a99677f07f2c082ebd10049e800",
+      "sha256_pdf": "908375cd67781ea8a03ae0c69e020a75bd80a3a74ce8baef16e7d7f0e499f315"
+    },
+    {
+      "stem": "24_DEMARRAGE_CHAUFFEUR_PAR_APPAREIL",
+      "title": "Commencer sur Android ou iPhone",
+      "kit_ids": [
+        "KIT12",
+        "KIT33"
+      ],
+      "landscape": false,
+      "page_count": 2,
+      "status": "candidate_not_published",
+      "version": "2026-09-13.1",
+      "html": "24_DEMARRAGE_CHAUFFEUR_PAR_APPAREIL.html",
+      "editable_source": "24_DEMARRAGE_CHAUFFEUR_PAR_APPAREIL.md",
+      "pdf": "24_DEMARRAGE_CHAUFFEUR_PAR_APPAREIL.pdf",
+      "publication_url": null,
+      "sha256_html": "04f88eec0465e0bef342b5c3971c888dad70405ee21d8d45213dd05d54067053",
+      "sha256_pdf": "03440409a69f29109e5af30f40ffc7523201425b61dc3fe47e3f1d3eef637caf"
+    }
+  ],
+  "sources": [
+    {
+      "path": "/Users/chandlermilien/FOREAS-SHARED/SELECTION_FONCTIONS_PUBLICITAIRES_FOREAS_DRIVER_2026-08-25.md",
+      "lines": "8–27,66–99",
+      "use": "Copilote, verdict Android, comparaison montant/approche/durée/kilomètres, hypothèses et dernier mot du chauffeur. À vérifier dans la version présentée."
+    },
+    {
+      "path": "/Users/chandlermilien/FOREAS-SHARED/CONTRAT_PARRAINAGE_CANONIQUE_V2026_08_21.md",
+      "lines": "4–27",
+      "use": "Décision5/50, annuel unique, direct seulement, mensuel mois suivant."
+    },
+    {
+      "path": "/Users/chandlermilien/FOREAS-SHARED/FOREAS_PARTNER_PROGRAM_2026-08-26/01_CONTRAT_PRODUIT_FINANCIER.md",
+      "lines": "24–44,87–98",
+      "use": "Attribution, preuves de paiement et limites des données du parrain."
+    },
+    {
+      "path": "/Users/chandlermilien/FOREAS-SHARED/FOREAS_PARTNER_PROGRAM_2026-08-26/15_DECISIONS_AVANT_PRODUCTION.md",
+      "lines": "3–16",
+      "use": "Distinguer décisions et paramètres candidats, notamment jour du lot."
+    },
+    {
+      "path": "/Users/chandlermilien/FOREAS-SHARED/FOREAS_POSITIONNEMENT_FLOTTES_VTC_2026-09-08.md",
+      "lines": "29–48,93–178",
+      "use": "Métier réel, recommandation versus financement, confidentialité, concurrence et pilote."
+    },
+    {
+      "path": "/Users/chandlermilien/Documents/Codex/2026-09-07/je-x20-3/work/implementation_partenaires_20260908/portal/content/partner/conditions/CONDITIONS_PROGRAMME_2026-09-12.1.md",
+      "use": "Conditions EPHIALTES finalisées ; la publication effective reste distincte."
+    },
+    {
+      "path": "/Users/chandlermilien/Documents/Codex/2026-09-07/je-x20-3/work/implementation_partenaires_20260908/portal/lib/partner/kit.ts",
+      "lines": "1–60",
+      "use": "Fonction prudente, profils, guide, mention commerciale et lien vérifié."
+    },
+    {
+      "path": "/Users/chandlermilien/Documents/Codex/2026-09-07/je-x20-3/work/implementation_partenaires_20260908/reports/guides_financiers_20260909/REFERENCES.json",
+      "use": "Current portal labels, actual ledger evidence, preserved prior documents and current design inputs."
+    },
+    {
+      "path": "/Users/chandlermilien/Documents/Codex/2026-09-07/je-x20-3/work/implementation_partenaires_20260908/reports/accueil_partenaire_20260909/REFERENCES.json",
+      "use": "Current signup, partner account, invitation, subscription management and brand sources."
+    }
+  ],
+  "unresolved": [
+    "Mode et conditions de tout achat collectif, statut des accès au départ",
+    "Participants, période et moyens du pilote à convenir",
+    "Mission créateur, honoraires éventuels et droits d’exploitation à convenir"
+  ],
+  "publication": false,
+  "print_palette": {
+    "authority": "DESIGN_SYSTEM_MASTER.md §30.3 et color.acquisitionLight dans tokens.json",
+    "ink": "#1D1D1F",
+    "inkSoft": "rgba(29,29,31,0.68)",
+    "paper": "#FFFFFF",
+    "ratios_on_white": {
+      "ink_on_paper": 16.829972351390765,
+      "inkSoft_on_paper": 5.792242574160405,
+      "violetRoyal_on_paper_decoration_only": 4.40620407102786
+    },
+    "master_sha256": "b720cd4ac7110264c574a83a37e14eda877a71cf9683c5a74808017352792358",
+    "tokens_sha256": "208c5234529a5353b8961c0734cf657918f33cafa80d25c454732489a2d6ae66",
+    "accent_link_underline_only": "#8C52FF",
+    "separator": {
+      "rule": "DESIGN_SYSTEM_MASTER §8.6 R7",
+      "width": "1px",
+      "color": "var(--print-border)",
+      "source": "color.acquisitionLight.borderStrong"
+    }
+  },
+  "contact_links": {
+    "href": "mailto:contact@foreas.xyz",
+    "pdf_annotations": 42,
+    "pages_with_contact_link": 34,
+    "total_pages": 43,
+    "each_pdf_page_has_contact": false,
+    "no_message_sent": true
+  },
+  "share_pack": {
+    "filename": "25_CARTES_ET_VISUELS_FOREAS.zip",
+    "version": "2026-09-13.1",
+    "status": "candidate_not_published",
+    "kit_ids": [
+      "KIT20",
+      "KIT22"
+    ],
+    "formats": [
+      "A5 148x210 mm",
+      "Publication 1080x1350",
+      "Story 1080x1920"
+    ],
+    "example_pdf_pages": 1,
+    "example_link": "https://example.invalid/foreas-demo",
+    "composer": "25_CARTES_ET_VISUELS_FOREAS/PERSONNALISER.html",
+    "sha256": "ade42c94bf7105467ed3c08f8a8717f851156206f8be001789a74d7d63092a81",
+    "files": [
+      {
+        "file": "EXEMPLE_CARTE.png",
+        "sha256": "42de0e8c51f639d8ca4d97b54ca4d30cfc912d94377bfb0b89e759f4913733db"
+      },
+      {
+        "file": "EXEMPLE_CARTE_A5.pdf",
+        "sha256": "c4a35b7fd82e8d7a11fbf9eaeee0a2b574d02787262843a764b55cf82165e8d0"
+      },
+      {
+        "file": "EXEMPLE_PUBLICATION.png",
+        "sha256": "f347ddde4d2c797d984ab288ef1f5b4eed37082d259d92d4d63076f29276ce47"
+      },
+      {
+        "file": "EXEMPLE_STORY.png",
+        "sha256": "ddf8ce25fad5413bf5a5b7c1dcd188e861c919f9fd81121822477133218a0a0e"
+      },
+      {
+        "file": "LICENCE_GENOS.txt",
+        "sha256": "c29a3fd5e7962b626fcbcf6713d47ae4656fded06335b607d14f03a4a25cb82b"
+      },
+      {
+        "file": "LICENCE_INTER.txt",
+        "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57"
+      },
+      {
+        "file": "LICENCE_QR.txt",
+        "sha256": "3a850fa5f08101db6f40676c2786e10bd2cd5fff7b12ffdf1e0c434d4e49d90c"
+      },
+      {
+        "file": "LIRE_AVANT_PARTAGE.md",
+        "sha256": "38838527161d9bc5644d6b396f9f372bee23d9a38c605a3415291f22c93d489d"
+      },
+      {
+        "file": "PERSONNALISER.html",
+        "sha256": "2b12279c1f6441c937b7027c248bf25c73344560dbd1d04027e67b4e7bdab1d7"
+      }
+    ]
+  },
+  "individual_requirements": [
+    "Régime fiscal, facture et dossier de versement vérifiés pour chaque partenaire."
+  ],
+  "current_conditions": {
+    "version": "2026-09-12.1",
+    "url": "https://partners.foreas.xyz/programme-partenaire/conditions/2026-09-12.1",
+    "status": "approved_for_publication_not_yet_published"
+  }
+}

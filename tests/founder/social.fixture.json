@@ -1,0 +1,168 @@
+{
+  "revision": "8d9197e94cb445ae264beeaf12dcfa6ea957a806",
+  "fixtureOnly": true,
+  "providerCalled": false,
+  "purpose": "Resultat du module officiel sur donnees fictives",
+  "boundResponse": {
+    "version": 1,
+    "requestId": "ff5283bb-f113-4248-8844-7190c2fcf675",
+    "missionId": "mission-fixture",
+    "stepId": "lecture-sociale",
+    "scopeHash": "7b7d3468daf84c8f937b631cdc932beebdc3663cf300bde81009519fd7e7a5c7",
+    "scope": {
+      "ownerId": "owner-fixture",
+      "robotRef": "robot.fixture",
+      "purpose": "FOREAS_HUNTER",
+      "driverId": null,
+      "providerAccountRef": "account-fixture",
+      "channel": "email",
+      "timezone": "Europe/Paris",
+      "revision": 1,
+      "environment": "test"
+    },
+    "metrics": {
+      "sourceRef": "app_social_dispatches",
+      "scopeRef": "robot.fixture",
+      "timezone": "Europe/Paris",
+      "calendarDate": "2026-09-09",
+      "observedAt": "2026-09-09T10:00:00.000000+00:00",
+      "periodStart": "2026-09-08T22:00:00+00:00",
+      "periodEnd": "2026-09-09T22:00:00+00:00",
+      "coverage": "partial",
+      "globalGate": "LOCAL_REVIEW_ONLY",
+      "configuredQuota": 100,
+      "effectiveQuota": 0,
+      "scopeQuotaMaximum": 20,
+      "messageQuotaMaximum": 20,
+      "consumedSlots": 8,
+      "reservedSlots": 1,
+      "uncertainSlots": 2,
+      "counts": {
+        "prospectsSelected": null,
+        "draftsPrepared": null,
+        "providerAcceptedMessages": 5,
+        "distinctExternalProspectsContacted": 2,
+        "deliveryConfirmed": null,
+        "authenticatedReplies": null,
+        "usefulReplies": null,
+        "conversionsAttributed": null
+      },
+      "limitations": [
+        "Fixture only"
+      ],
+      "proofRefs": [
+        "app_social_dispatches:robot.fixture:2026-09-09"
+      ]
+    }
+  },
+  "capabilityResult": {
+    "summary": "2026-09-09 : 5 messages acceptés par le fournisseur, 2 adresses externes distinctes déclarées. Livraison et vrais prospects non certifiés. 2 places incertaines, jours anciens inclus.",
+    "output": {
+      "robotRef": "robot.fixture",
+      "providerAccountRef": "account-fixture",
+      "purpose": "FOREAS_HUNTER",
+      "driverId": null,
+      "channel": "email",
+      "scopeRevision": 1,
+      "scopeHash": "7b7d3468daf84c8f937b631cdc932beebdc3663cf300bde81009519fd7e7a5c7",
+      "sourceRef": "app_social_dispatches",
+      "scopeRef": "robot.fixture",
+      "timezone": "Europe/Paris",
+      "calendarDate": "2026-09-09",
+      "observedAt": "2026-09-09T10:00:00.000000+00:00",
+      "periodStart": "2026-09-08T22:00:00+00:00",
+      "periodEnd": "2026-09-09T22:00:00+00:00",
+      "coverage": "partial",
+      "globalGate": "LOCAL_REVIEW_ONLY",
+      "configuredQuota": 100,
+      "effectiveQuota": 0,
+      "scopeQuotaMaximum": 20,
+      "messageQuotaMaximum": 20,
+      "consumedSlots": 8,
+      "reservedSlots": 1,
+      "uncertainSlots": 2,
+      "counts": {
+        "prospectsSelected": null,
+        "draftsPrepared": null,
+        "providerAcceptedMessages": 5,
+        "distinctExternalProspectsContacted": 2,
+        "deliveryConfirmed": null,
+        "authenticatedReplies": null,
+        "usefulReplies": null,
+        "conversionsAttributed": null
+      },
+      "limitations": [
+        "Ce registre couvre uniquement ce robot et ses messages email enregistrés.",
+        "Une adresse déclarée externe ne certifie pas une personne ni un prospect réel.",
+        "L’acceptation fournisseur ne prouve ni la livraison, ni la lecture, ni une réponse.",
+        "La journée est celle où l’acceptation a été observée par le serveur.",
+        "Les places réservées et incertaines peuvent venir de jours précédents.",
+        "Les anciens historiques, les autres robots et les autres canaux ne sont pas couverts."
+      ],
+      "proofRefs": [
+        "app_social_dispatches:robot.fixture:2026-09-09"
+      ],
+      "countUnit": "producer_declared_external_email_address",
+      "verifiedCommercialContacts": null,
+      "simulation": true
+    },
+    "evidence": [
+      {
+        "kind": "social.metrics.observation",
+        "source": "simulation:app:app_social_metrics_bound",
+        "observedAt": "2026-09-09T10:00:00.000000+00:00",
+        "reference": "app_social_dispatches:robot.fixture:2026-09-09",
+        "accountId": "account-fixture",
+        "data": {
+          "robotRef": "robot.fixture",
+          "providerAccountRef": "account-fixture",
+          "purpose": "FOREAS_HUNTER",
+          "driverId": null,
+          "channel": "email",
+          "scopeRevision": 1,
+          "scopeHash": "7b7d3468daf84c8f937b631cdc932beebdc3663cf300bde81009519fd7e7a5c7",
+          "sourceRef": "app_social_dispatches",
+          "scopeRef": "robot.fixture",
+          "timezone": "Europe/Paris",
+          "calendarDate": "2026-09-09",
+          "observedAt": "2026-09-09T10:00:00.000000+00:00",
+          "periodStart": "2026-09-08T22:00:00+00:00",
+          "periodEnd": "2026-09-09T22:00:00+00:00",
+          "coverage": "partial",
+          "globalGate": "LOCAL_REVIEW_ONLY",
+          "configuredQuota": 100,
+          "effectiveQuota": 0,
+          "scopeQuotaMaximum": 20,
+          "messageQuotaMaximum": 20,
+          "consumedSlots": 8,
+          "reservedSlots": 1,
+          "uncertainSlots": 2,
+          "counts": {
+            "prospectsSelected": null,
+            "draftsPrepared": null,
+            "providerAcceptedMessages": 5,
+            "distinctExternalProspectsContacted": 2,
+            "deliveryConfirmed": null,
+            "authenticatedReplies": null,
+            "usefulReplies": null,
+            "conversionsAttributed": null
+          },
+          "limitations": [
+            "Ce registre couvre uniquement ce robot et ses messages email enregistrés.",
+            "Une adresse déclarée externe ne certifie pas une personne ni un prospect réel.",
+            "L’acceptation fournisseur ne prouve ni la livraison, ni la lecture, ni une réponse.",
+            "La journée est celle où l’acceptation a été observée par le serveur.",
+            "Les places réservées et incertaines peuvent venir de jours précédents.",
+            "Les anciens historiques, les autres robots et les autres canaux ne sont pas couverts."
+          ],
+          "proofRefs": [
+            "app_social_dispatches:robot.fixture:2026-09-09"
+          ],
+          "countUnit": "producer_declared_external_email_address",
+          "verifiedCommercialContacts": null,
+          "simulation": true
+        }
+      }
+    ]
+  }
+}

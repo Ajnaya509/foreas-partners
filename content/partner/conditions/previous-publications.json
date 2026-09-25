@@ -1,0 +1,17 @@
+{
+  "2026-09-09.3": {
+    "version": "2026-09-09.3",
+    "state": "finalized_awaiting_publication",
+    "sha256": "e9b3518cd693d56f2790dd0a4fef714dd275cbc4711e590a2a26140d611bacd1",
+    "html_file": "CONDITIONS_PROGRAMME_2026-09-09.3.html",
+    "publication_authorized": true,
+    "blocking_decisions_file": null,
+    "company_legal_name": "EPHIALTES",
+    "siren": "940879281",
+    "identity_decision": "Chandler, réponse directe du 9 septembre 2026 : Oui, EPHIALTES",
+    "authorization_basis": "Carte blanche de Chandler pour finaliser et mettre en place le programme. Aucun accord individuel ni résultat de parcours n’est inventé.",
+    "document_url": "https://partners.foreas.xyz/programme-partenaire/conditions/2026-09-09.3",
+    "independent_review_state": "accepted_for_publication",
+    "independent_review_reference": "reports/notice_candidature_finale_20260909/AVIS_DELTA_FINAL.md"
+  }
+}

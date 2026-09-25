@@ -1,0 +1,156 @@
+{
+  "status": "prepared_not_published",
+  "version": "2026-09-12.2",
+  "items": [
+    {
+      "id": "foreas-driver-centre-guide-html",
+      "title": "Votre guide partenaire — Centre de formation",
+      "description": "Le bon moment, les étapes et les réponses à donner.",
+      "portal_path": "/partner/kit/centre/guide.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-centre-fiche-chauffeur-html",
+      "title": "La fiche à remettre au chauffeur — Centre de formation",
+      "description": "Une découverte simple, avec le lien de l’organisation admissible.",
+      "portal_path": "/partner/kit/centre/fiche-chauffeur.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-centre-messages-txt",
+      "title": "Trois messages prêts à adapter — Centre de formation",
+      "description": "Présentation, réponse à une question et dernier suivi utile.",
+      "portal_path": "/partner/kit/centre/messages.txt",
+      "format": "txt",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-loueur-guide-html",
+      "title": "Votre guide partenaire — Loueur",
+      "description": "Le bon moment, les étapes et les réponses à donner.",
+      "portal_path": "/partner/kit/loueur/guide.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-loueur-fiche-chauffeur-html",
+      "title": "La fiche à remettre au chauffeur — Loueur",
+      "description": "Une découverte simple, avec le lien de l’organisation admissible.",
+      "portal_path": "/partner/kit/loueur/fiche-chauffeur.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-loueur-messages-txt",
+      "title": "Trois messages prêts à adapter — Loueur",
+      "description": "Présentation, réponse à une question et dernier suivi utile.",
+      "portal_path": "/partner/kit/loueur/messages.txt",
+      "format": "txt",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-flotte-guide-html",
+      "title": "Votre guide partenaire — Flotte ou réseau",
+      "description": "Le bon moment, les étapes et les réponses à donner.",
+      "portal_path": "/partner/kit/flotte/guide.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-flotte-fiche-chauffeur-html",
+      "title": "La fiche à remettre au chauffeur — Flotte ou réseau",
+      "description": "Une découverte simple, avec le lien de l’organisation admissible.",
+      "portal_path": "/partner/kit/flotte/fiche-chauffeur.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-flotte-messages-txt",
+      "title": "Trois messages prêts à adapter — Flotte ou réseau",
+      "description": "Présentation, réponse à une question et dernier suivi utile.",
+      "portal_path": "/partner/kit/flotte/messages.txt",
+      "format": "txt",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-createur-guide-html",
+      "title": "Votre guide partenaire — Créateur ou communauté",
+      "description": "Le bon moment, les étapes et les réponses à donner.",
+      "portal_path": "/partner/kit/createur/guide.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-createur-fiche-chauffeur-html",
+      "title": "La fiche à remettre au chauffeur — Créateur ou communauté",
+      "description": "Une découverte simple, avec le lien de l’organisation admissible.",
+      "portal_path": "/partner/kit/createur/fiche-chauffeur.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-createur-messages-txt",
+      "title": "Trois messages prêts à adapter — Créateur ou communauté",
+      "description": "Présentation, réponse à une question et dernier suivi utile.",
+      "portal_path": "/partner/kit/createur/messages.txt",
+      "format": "txt",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-chauffeur-guide-html",
+      "title": "Votre guide partenaire — Chauffeur parrain",
+      "description": "Le bon moment, les étapes et les réponses à donner.",
+      "portal_path": "/partner/kit/chauffeur/guide.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-chauffeur-fiche-chauffeur-html",
+      "title": "La fiche à remettre au chauffeur — Chauffeur parrain",
+      "description": "Une découverte simple, avec le lien de l’organisation admissible.",
+      "portal_path": "/partner/kit/chauffeur/fiche-chauffeur.html",
+      "format": "html",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    },
+    {
+      "id": "foreas-driver-chauffeur-messages-txt",
+      "title": "Trois messages prêts à adapter — Chauffeur parrain",
+      "description": "Présentation, réponse à une question et dernier suivi utile.",
+      "portal_path": "/partner/kit/chauffeur/messages.txt",
+      "format": "txt",
+      "version": "2026-09-12.2",
+      "status": "prepared_not_published",
+      "published_at": null
+    }
+  ]
+}

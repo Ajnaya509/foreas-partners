@@ -1,24 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import {safePortalNext} from '@/lib/partner/navigation';
+
+import { Suspense, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { ForeasLogo } from "@/components/foreas/ForeasLogo";
-import { ForeasDivider } from "@/components/foreas/ForeasDivider";
 import { Eyebrow } from "@/components/foreas/Eyebrow";
 import { cn } from "@/lib/utils";
+import { authPath, destinationForRole } from "@/lib/auth-navigation";
 
 type State = "idle" | "loading" | "success" | "error";
 
-export default function AuthUpdatePage() {
+function AuthUpdateForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [state, setState] = useState<State>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safePortalNext(searchParams.get("next"));
+  const firstAccess = searchParams.get("invitation") === "1";
 
   const isMatch = password === confirm;
   const isStrong = password.length >= 8;
@@ -37,7 +42,7 @@ export default function AuthUpdatePage() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        setErrorMsg(error.message);
+        setErrorMsg(firstAccess ? "Votre mot de passe n’a pas pu être enregistré. Réessayez ou demandez une nouvelle invitation à votre contact FOREAS." : error.message);
         setState("error");
         return;
       }
@@ -50,7 +55,7 @@ export default function AuthUpdatePage() {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) { router.push("/login"); return; }
+        if (!user) { router.push(authPath("/login", next, { error: "auth_failed" })); return; }
 
         const { data: adminRole } = await supabase
           .from("user_roles")
@@ -61,16 +66,18 @@ export default function AuthUpdatePage() {
           .is("revoked_at", null)
           .maybeSingle();
 
-        if (adminRole) { router.push("/admin"); return; }
+        if (adminRole) { router.push(destinationForRole(next, "admin")); return; }
+
+        if (searchParams.has('next') && /^\/partner(\/|$)/.test(next)) { router.push(next); return; }
 
         const { data: partner } = await supabase
           .from("partners").select("id").eq("user_id", user.id).maybeSingle();
-        if (partner) { router.push("/partner"); return; }
+        if (partner) { router.push(destinationForRole(next, "partner")); return; }
 
-        router.push("/driver");
+        router.push(destinationForRole(next, "driver"));
       }, 2000);
     } catch {
-      setErrorMsg("Erreur réseau. Réessaie.");
+      setErrorMsg(firstAccess ? "La connexion a été interrompue. Vérifiez votre accès à Internet et réessayez." : "Erreur réseau. Réessaie.");
       setState("error");
     }
   };
@@ -88,7 +95,7 @@ export default function AuthUpdatePage() {
   const strengthLabels = ["", "Trop court", "Correct", "Fort"];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-lg bg-[#000000]">
+    <div className="auth-page">
       {/* Halos */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[550px] h-[550px] rounded-full bg-violet-royal/[0.14] blur-[140px]" />
@@ -99,22 +106,24 @@ export default function AuthUpdatePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[400px]"
+        className="auth-container"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="auth-brand">
           <div className="flex justify-center mb-4">
             <ForeasLogo variant="full" color="#F8FAFC" height={32} />
           </div>
-          <ForeasDivider className="mx-auto max-w-[160px]" opacity={0.4} />
+          
           <div className="mt-4">
-            <Eyebrow>Sécurité · Nouveau mot de passe</Eyebrow>
+            <Eyebrow>{firstAccess ? "Premier accès" : "Accès FOREAS"}</Eyebrow>
           </div>
+          <p className="auth-brand-message">Toujours plus loin.</p>
+          <p className="auth-brand-note">Choisis un nouveau mot de passe pour continuer.</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl overflow-hidden">
-          <div className="p-8">
+        <div className="auth-card">
+          <div className="auth-card-inner">
             <AnimatePresence mode="wait">
               {state === "success" ? (
                 <motion.div
@@ -127,9 +136,9 @@ export default function AuthUpdatePage() {
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success/10 border border-success/20 mx-auto mb-5">
                     <CheckCircle2 size={28} className="text-success" />
                   </div>
-                  <h2 className="text-xl font-extrabold text-text-hero">Mot de passe mis à jour</h2>
+                  <h2 className="auth-title">{firstAccess ? "Ton mot de passe est enregistré" : "Mot de passe mis à jour"}</h2>
                   <p className="mt-3 text-sm text-text-secondary">
-                    Accès sécurisé. Redirection vers ton dashboard…
+                    {firstAccess ? "Ouverture de votre espace partenaire…" : "Accès sécurisé. Redirection vers ton espace…"}
                   </p>
                   <div className="mt-4 flex justify-center">
                     <Loader2 size={16} className="animate-spin text-violet-royal" />
@@ -138,11 +147,11 @@ export default function AuthUpdatePage() {
               ) : (
                 <motion.div key="form">
                   <div className="mb-7">
-                    <h1 className="text-2xl font-extrabold text-text-hero tracking-tight">
-                      Nouveau mot de passe
+                    <h1 className="auth-title">
+                      {firstAccess ? "Choisissez votre mot de passe" : "Nouveau mot de passe"}
                     </h1>
-                    <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                      Choisis un mot de passe fort. Il remplacera l&apos;ancien immédiatement.
+                    <p className="auth-subtitle">
+                      {firstAccess ? "Vous retrouverez ensuite votre lien et vos supports dans votre espace partenaire." : "Choisis un mot de passe fort. Il remplacera l’ancien immédiatement."}
                     </p>
                   </div>
 
@@ -164,11 +173,12 @@ export default function AuthUpdatePage() {
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[11px] font-semibold text-text-tertiary mb-2 uppercase tracking-widest">
+                      <label htmlFor="new-password" className="block text-[11px] font-semibold text-text-tertiary mb-2 uppercase tracking-widest">
                         Nouveau mot de passe
                       </label>
                       <div className="relative">
                         <input
+                          id="new-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Minimum 8 caractères"
                           required
@@ -183,7 +193,8 @@ export default function AuthUpdatePage() {
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors p-1"
-                          tabIndex={-1}
+                          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                          aria-pressed={showPassword}
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -218,11 +229,12 @@ export default function AuthUpdatePage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-text-tertiary mb-2 uppercase tracking-widest">
+                      <label htmlFor="confirm-password" className="block text-[11px] font-semibold text-text-tertiary mb-2 uppercase tracking-widest">
                         Confirmer
                       </label>
                       <div className="relative">
                         <input
+                          id="confirm-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Même mot de passe"
                           required
@@ -267,12 +279,12 @@ export default function AuthUpdatePage() {
                       {state === "loading" ? (
                         <>
                           <Loader2 size={16} className="animate-spin" />
-                          Mise à jour…
+                          {firstAccess ? "Enregistrement…" : "Mise à jour…"}
                         </>
                       ) : (
                         <>
                           <Lock size={16} />
-                          Définir le nouveau mot de passe
+                          {firstAccess ? "Créer mon mot de passe" : "Changer le mot de passe"}
                         </>
                       )}
                     </button>
@@ -283,10 +295,14 @@ export default function AuthUpdatePage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[10px] text-text-muted uppercase tracking-[0.2em] font-medium">
-          Coopérative d&apos;Activité et d&apos;Emploi · CAE VTC-T3P
+        <p className="auth-footer">
+          © 2026 FOREAS. Tous droits réservés.
         </p>
       </motion.div>
     </div>
   );
+}
+
+export default function AuthUpdatePage() {
+  return <Suspense fallback={<div className="min-h-screen bg-black" />}><AuthUpdateForm /></Suspense>;
 }
