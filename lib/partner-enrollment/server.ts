@@ -150,7 +150,6 @@ export async function connectSession(user:User){
     account:e.stripe_account_id,
     'components[account_onboarding][enabled]':'true',
     'components[account_onboarding][features][external_account_collection]':'true',
-    'components[account_onboarding][features][disable_stripe_user_authentication]':'true',
   }));
   if(session.account!==e.stripe_account_id||typeof session.client_secret!=='string')throw new Error('CONNECT_UNAVAILABLE');
   return {clientSecret:session.client_secret};
