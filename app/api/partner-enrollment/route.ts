@@ -1,5 +1,5 @@
 import {after,NextRequest,NextResponse} from 'next/server';
-import {settings,currentUser,getState,limit,register,rpc,termsHash,connect,refreshConnect} from '@/lib/partner-enrollment/server';
+import {settings,currentUser,getState,limit,register,rpc,termsHash,connect,connectSession,refreshConnect} from '@/lib/partner-enrollment/server';
 import {sendSignIn,deliverEnrollmentMail,mailSettings} from '@/lib/partner-enrollment/mail';
 import {ENROLLMENT_POLICY,enrollmentError} from '@/lib/partner-enrollment/policy';
 export const runtime='nodejs';
@@ -36,6 +36,7 @@ export async function POST(request:NextRequest){
     }
     if(keys!=='action,userId')throw new Error('INVALID_REQUEST');
     if(body.action==='connect')return NextResponse.json(await connect(user),{headers});
+    if(body.action==='session')return NextResponse.json(await connectSession(user),{headers});
     if(body.action==='refresh'){const state=await refreshConnect(user);mailLater(user.id);return NextResponse.json(state,{headers});}
     throw new Error('INVALID_REQUEST');
   }catch(e){return fail(e);}

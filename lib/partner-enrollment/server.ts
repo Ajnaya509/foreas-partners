@@ -73,6 +73,13 @@ function stripeKey(){
   if(!key.startsWith(mode==='live'?'sk_live_':'sk_test_')&&!key.startsWith(mode==='live'?'rk_live_':'rk_test_'))throw new Error('CONNECT_UNAVAILABLE');
   return key;
 }
+function stripePublishableKey(){
+  const {mode}=settings();
+  const key=process.env.STRIPE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY||'';
+  if(!key)return null;
+  if(!key.startsWith(mode==='live'?'pk_live_':'pk_test_'))throw new Error('CONNECT_UNAVAILABLE');
+  return key;
+}
 export async function stripeRequest(path:string,params?:URLSearchParams,idempotency?:string):Promise<any>{
   const response=await fetch('https://api.stripe.com/v1/'+path,{method:params?'POST':'GET',headers:{Authorization:'Bearer '+stripeKey(),...(params?{'Content-Type':'application/x-www-form-urlencoded'}:{}),...(idempotency?{'Idempotency-Key':idempotency}:{})},body:params,cache:'no-store',signal:AbortSignal.timeout(18000)});
   const data=await response.json();
@@ -102,6 +109,7 @@ export async function refreshConnect(user:User){
 }
 export async function connect(user:User){
   stripeKey();
+  const publishableKey=stripePublishableKey();
   let e=await enrollment(user.id);
   if(!e?.accepted_at||e.status==='paused')throw new Error('CONDITIONS_REQUIRED');
   if(!e.stripe_account_id){
@@ -125,8 +133,25 @@ export async function connect(user:User){
   }
   if(!e?.stripe_account_id)throw new Error('CONNECT_UNCERTAIN');
   const account=await stripeRequest('accounts/'+encodeURIComponent(e.stripe_account_id));await ownedAccount(user.id,e,account);
-  const origin=settings().origin;
-  const link=await stripeRequest('account_links',new URLSearchParams({account:e.stripe_account_id,type:'account_onboarding',refresh_url:origin+'/inscription?retour=stripe',return_url:origin+'/inscription?retour=stripe'}));
-  if(typeof link.url!=='string'||!link.url.startsWith('https://connect.stripe.com/'))throw new Error('CONNECT_UNAVAILABLE');
-  return {url:link.url};
+  if(!publishableKey){
+    const origin=settings().origin;
+    const link=await stripeRequest('account_links',new URLSearchParams({account:e.stripe_account_id,type:'account_onboarding',refresh_url:origin+'/inscription?retour=stripe',return_url:origin+'/inscription?retour=stripe'}));
+    if(typeof link.url!=='string'||!link.url.startsWith('https://connect.stripe.com/'))throw new Error('CONNECT_UNAVAILABLE');
+    return {url:link.url};
+  }
+  return {embedded:true,publishableKey};
+}
+export async function connectSession(user:User){
+  const e=await enrollment(user.id);
+  if(!e?.accepted_at||!e.stripe_account_id||e.status==='paused')throw new Error('CONDITIONS_REQUIRED');
+  const account=await stripeRequest('accounts/'+encodeURIComponent(e.stripe_account_id));
+  await ownedAccount(user.id,e,account);
+  const session=await stripeRequest('account_sessions',new URLSearchParams({
+    account:e.stripe_account_id,
+    'components[account_onboarding][enabled]':'true',
+    'components[account_onboarding][features][external_account_collection]':'true',
+    'components[account_onboarding][features][disable_stripe_user_authentication]':'true',
+  }));
+  if(session.account!==e.stripe_account_id||typeof session.client_secret!=='string')throw new Error('CONNECT_UNAVAILABLE');
+  return {clientSecret:session.client_secret};
 }
