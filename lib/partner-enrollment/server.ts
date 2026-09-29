@@ -154,3 +154,18 @@ export async function connectSession(user:User){
   if(session.account!==e.stripe_account_id||typeof session.client_secret!=='string')throw new Error('CONNECT_UNAVAILABLE');
   return {clientSecret:session.client_secret};
 }
+export async function connectHosted(user:User){
+  const e=await enrollment(user.id);
+  if(!e?.accepted_at||!e.stripe_account_id||e.status==='paused')throw new Error('CONDITIONS_REQUIRED');
+  const account=await stripeRequest('accounts/'+encodeURIComponent(e.stripe_account_id));
+  await ownedAccount(user.id,e,account);
+  const origin=settings().origin;
+  const link=await stripeRequest('account_links',new URLSearchParams({
+    account:e.stripe_account_id,
+    type:'account_onboarding',
+    refresh_url:origin+'/inscription?retour=stripe',
+    return_url:origin+'/inscription?retour=stripe',
+  }));
+  if(typeof link.url!=='string'||!link.url.startsWith('https://connect.stripe.com/'))throw new Error('CONNECT_UNAVAILABLE');
+  return {url:link.url};
+}

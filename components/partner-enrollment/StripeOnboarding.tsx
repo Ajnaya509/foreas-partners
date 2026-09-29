@@ -5,7 +5,7 @@ import {loadConnectAndInitialize} from '@stripe/connect-js/pure';
 import type {StripeConnectInstance} from '@stripe/connect-js';
 import {ConnectAccountOnboarding,ConnectComponentsProvider} from '@stripe/react-connect-js';
 
-export function StripeOnboarding({publishableKey,userId,onExit}:{publishableKey:string;userId:string;onExit:()=>void}){
+export function StripeOnboarding({publishableKey,userId,onExit,onFallback,busy}:{publishableKey:string;userId:string;onExit:()=>void;onFallback:()=>void;busy:boolean}){
   const [instance,setInstance]=useState<StripeConnectInstance|null>(null);
   const [error,setError]=useState('');
 
@@ -30,6 +30,8 @@ export function StripeOnboarding({publishableKey,userId,onExit}:{publishableKey:
     <p className="enrollment-caption">Cette étape se déroule ici, dans FOREAS. Stripe protège directement tes informations d’identité et de versement.</p>
     {error&&<p className="enrollment-error" role="alert">{error}</p>}
     {instance?<ConnectComponentsProvider connectInstance={instance}><ConnectAccountOnboarding onExit={onExit} onLoadError={()=>setError('Le formulaire Stripe ne s’affiche pas. Réessaie dans un instant.')} /></ConnectComponentsProvider>:<p role="status">Ouverture du formulaire sécurisé…</p>}
+    <p className="enrollment-caption">Si le formulaire reste bloqué, ouvre-le directement chez Stripe. Tu reviendras ensuite ici.</p>
+    <button type="button" className="enrollment-secondary" disabled={busy} onClick={onFallback}>{busy?'Ouverture…':'Ouvrir chez Stripe'}</button>
     <button type="button" className="enrollment-back" onClick={onExit}>Terminer plus tard</button>
   </div>;
 }
