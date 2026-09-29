@@ -14,7 +14,7 @@ export function StripeOnboarding({publishableKey,userId,onExit,onFallback,busy}:
     const connect=loadConnectAndInitialize({
       publishableKey,
       locale:'fr-FR',
-      appearance:{variables:{fontFamily:'Inter, sans-serif',colorPrimary:'#7040d4',colorBackground:'#ffffff',colorText:'#1d1d1f',borderRadius:'12px'}},
+      appearance:{variables:{fontFamily:'Inter, sans-serif',colorPrimary:'#007aff',colorBackground:'#ffffff',colorText:'#1d1d1f',colorSecondaryText:'#686873',buttonPrimaryColorBackground:'#007aff',buttonPrimaryColorBorder:'#007aff',buttonPrimaryColorText:'#ffffff',formAccentColor:'#007aff',borderRadius:'8px'}},
       fetchClientSecret:async()=>{
         const response=await fetch('/api/partner-enrollment',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify({action:'session',userId})});
         const data=await response.json();
