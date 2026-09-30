@@ -22,11 +22,15 @@ export function measurementChoice(): 'yes' | 'no' | null {
 export function saveMeasurementChoice(choice: 'yes' | 'no'): boolean {
   try {
     window.localStorage.setItem(CONSENT_KEY, choice);
-    if (choice === 'no' && clientPromise) {
+    if (clientPromise) {
       void clientPromise.then(client => {
-        client.opt_out_capturing();
-        client.stopSessionRecording();
-        client.reset();
+        if (choice === 'no') {
+          client.opt_out_capturing();
+          client.stopSessionRecording();
+          client.reset();
+        } else {
+          client.opt_in_capturing();
+        }
       });
     }
     return true;
