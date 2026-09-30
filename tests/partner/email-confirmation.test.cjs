@@ -17,6 +17,7 @@ const mocks={
   'next/link':({children,...props})=>React.createElement('a',props,children),
   './EnrollmentFrame':{EnrollmentFrame:({children})=>React.createElement('main',null,children)},
   './StripeOnboarding':{StripeOnboarding:()=>null},
+  '@/lib/partner-measurement':{trackPartnerEvent:async()=>{}},
 };
 const {ConfirmEmail}=component('components/partner-enrollment/ConfirmEmail.tsx',mocks);
 test('confirmation needs a click and opens a fresh signed-in document after success',async()=>{

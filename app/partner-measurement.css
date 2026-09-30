@@ -1,0 +1,10 @@
+.partner-measurement{position:fixed;z-index:1000;right:20px;bottom:20px;width:min(380px,calc(100vw - 32px));padding:20px;border:1px solid rgba(86,106,138,.2);border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 20px 60px rgba(20,35,63,.16);backdrop-filter:blur(18px);color:#1d1d1f;font:400 13px/1.5 var(--font-foreas-inter),sans-serif}
+.partner-measurement strong{display:block;font-size:15px;line-height:1.35;font-weight:700}
+.partner-measurement p{margin:8px 0 16px;color:#4f5969}
+.partner-measurement-actions{display:flex;flex-wrap:wrap;gap:8px}
+.partner-measurement-actions button{min-height:40px;flex:1;border:1px solid #d8dfeb;border-radius:10px;background:#fff;color:#1d1d1f;font:600 12px var(--font-foreas-inter),sans-serif;cursor:pointer}
+.partner-measurement-actions button:last-child{border-color:#23344e;background:#23344e;color:#fff}
+.partner-measurement-actions button:focus-visible{outline:3px solid #62bafa;outline-offset:2px}
+@media(max-width:600px){.partner-measurement{right:16px;bottom:16px;padding:17px}}
+.partner-privacy-link{border:0;background:none;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.partner-privacy-link:focus-visible{outline:3px solid #62bafa;outline-offset:2px}

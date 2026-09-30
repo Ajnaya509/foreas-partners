@@ -4,7 +4,9 @@ import "./globals.css";
 import "./partner-redesign.css";
 import "./auth-redesign.css";
 import "./enrollment.css";
+import "./partner-measurement.css";
 import { LegacyChrome } from "@/components/partner/LegacyChrome";
+import { PartnerMeasurement } from "@/components/partner/PartnerMeasurement";
 
 const inter = localFont({ src: [
   { path: "../public/fonts/Inter-Regular.ttf", weight: "400" },
@@ -33,6 +35,7 @@ export default function RootLayout({
       >
         {children}
         <LegacyChrome />
+        <PartnerMeasurement />
       </body>
     </html>
   );
