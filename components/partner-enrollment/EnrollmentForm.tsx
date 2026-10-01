@@ -6,6 +6,7 @@ import {createClient} from '@/lib/supabase/client';
 import {ENROLLMENT_POLICY,PROFILES,TERMS,type EnrollmentState} from '@/lib/partner-enrollment/policy';
 import {EnrollmentFrame} from './EnrollmentFrame';
 import {StripeOnboarding} from './StripeOnboarding';
+import {trackPartnerEvent} from '@/lib/partner-measurement';
 
 export function EnrollmentForm({termsHash}:{termsHash:string}){
   const [state,setState]=useState<EnrollmentState|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
@@ -17,8 +18,8 @@ export function EnrollmentForm({termsHash}:{termsHash:string}){
   useEffect(()=>{void refresh();const auth=createClient();const {data}=auth.auth.onAuthStateChange(()=>{window.setTimeout(()=>void refresh(),0);});return()=>data.subscription.unsubscribe();},[refresh]);
   async function action(type:string,body:Record<string,unknown>={}){
     setBusy(true);setError('');
-    try{const r=await fetch('/api/partner-enrollment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type,...(type==='email'?{}:{userId:state?.userId}),...body})});const data=await r.json();if(!r.ok)throw new Error(data.error);if(data.embedded&&typeof data.publishableKey==='string'){setStripePublishableKey(data.publishableKey);return;}if(data.url){window.location.assign(data.url);return;}if(data.sent)setSent(true);else setState(data);}
-    catch(e){setError(e instanceof Error?e.message:'Ta demande n’a pas abouti.');}finally{setBusy(false);}
+    try{const r=await fetch('/api/partner-enrollment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type,...(type==='email'?{}:{userId:state?.userId}),...body})});const data=await r.json();if(!r.ok)throw new Error(data.error);void trackPartnerEvent('partner_step_completed',{step:type});if(data.ready)void trackPartnerEvent('partner_space_ready');if(data.embedded&&typeof data.publishableKey==='string'){setStripePublishableKey(data.publishableKey);return;}if(data.url){window.location.assign(data.url);return;}if(data.sent)setSent(true);else setState(data);}
+    catch(e){void trackPartnerEvent('partner_step_failed',{step:type});setError(e instanceof Error?e.message:'Ta demande n’a pas abouti.');}finally{setBusy(false);}
   }
   const stripeReturned=useRef(false);
   useEffect(()=>{if(!state?.userId||!state.enrollment?.accepted_at||stripeReturned.current||new URLSearchParams(window.location.search).get('retour')!=='stripe')return;stripeReturned.current=true;window.history.replaceState(null,'','/inscription');void action('refresh');},[state?.userId,state?.enrollment?.accepted_at]);
