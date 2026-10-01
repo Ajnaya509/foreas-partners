@@ -97,3 +97,65 @@ test('a partner opens the Stripe form inside FOREAS and can return without losin
     assert.equal(view.root.findAllByProps({className:'stripe-test'}).length,0);
   }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
 });
+test('repeated auth notifications cannot create an enrollment request loop',async()=>{
+  const original={window:global.window,fetch:global.fetch};let requests=0,notify;const timers=new Map();let nextTimer=0;
+  global.window={setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer;},clearTimeout:id=>timers.delete(id),location:{search:''}};
+  global.fetch=async()=>{requests++;return {ok:true,status:200,json:async()=>({signedIn:false})};};
+  const {EnrollmentForm}=component('components/partner-enrollment/EnrollmentForm.tsx',{
+    ...mocks,'@/lib/partner-enrollment/policy':{PROFILES:[],TERMS:'',ENROLLMENT_POLICY:'test'},
+    '@/lib/supabase/client':{createClient:()=>({auth:{onAuthStateChange:callback=>{notify=callback;return {data:{subscription:{unsubscribe(){}}}};}}})},
+  });
+  let view;
+  try{
+    await act(async()=>{view=create(React.createElement(EnrollmentForm,{termsHash:'unused'}));});
+    assert.equal(requests,1);
+    await act(async()=>{
+      notify('INITIAL_SESSION',{user:{id:'existing'}});
+      for(let i=0;i<100;i++){
+        notify('SIGNED_IN',{user:{id:'existing'}});
+        notify('TOKEN_REFRESHED',{user:{id:'existing'}});
+      }
+      for(let i=0;i<100;i++)notify('SIGNED_OUT',null);
+    });
+    assert.equal(requests,1,'Expired sessions and tab focus must not poll the enrollment API');
+    assert.equal(timers.size,0);
+    await act(async()=>{
+      notify('SIGNED_IN',{user:{id:'new-partner'}});
+      for(let i=0;i<100;i++)notify('SIGNED_IN',{user:{id:'new-partner'}});
+      const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());
+    });
+    assert.equal(requests,2,'A real account change still refreshes once');
+  }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
+});
+test('concurrent enrollment refreshes share a single request',async()=>{
+  const original={window:global.window,fetch:global.fetch};let requests=0,notify,complete;const timers=new Map();let nextTimer=0;
+  global.window={setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer;},clearTimeout:id=>timers.delete(id),location:{search:''}};
+  global.fetch=()=>{requests++;return new Promise(resolve=>{complete=resolve;});};
+  const {EnrollmentForm}=component('components/partner-enrollment/EnrollmentForm.tsx',{
+    ...mocks,'@/lib/partner-enrollment/policy':{PROFILES:[],TERMS:'',ENROLLMENT_POLICY:'test'},
+    '@/lib/supabase/client':{createClient:()=>({auth:{onAuthStateChange:callback=>{notify=callback;return {data:{subscription:{unsubscribe(){}}}};}}})},
+  });
+  let view;
+  try{
+    await act(async()=>{view=create(React.createElement(EnrollmentForm,{termsHash:'unused'}));});
+    await act(async()=>{notify('SIGNED_IN',{user:{id:'partner'}});const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());});
+    assert.equal(requests,1);
+    await act(async()=>{complete({ok:true,status:200,json:async()=>({signedIn:false})});});
+    assert.equal(requests,1);
+  }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
+});
+test('a plain-text firewall limit produces a useful message without retrying',async()=>{
+  const original={window:global.window,fetch:global.fetch};let requests=0,jsonReads=0;
+  global.window={setTimeout,clearTimeout,location:{search:''}};
+  global.fetch=async()=>{requests++;return {ok:false,status:429,json:async()=>{jsonReads++;throw new SyntaxError('Unexpected token in private firewall body');}};};
+  const {EnrollmentForm}=component('components/partner-enrollment/EnrollmentForm.tsx',{
+    ...mocks,'@/lib/partner-enrollment/policy':{PROFILES:[],TERMS:'',ENROLLMENT_POLICY:'test'},
+    '@/lib/supabase/client':{createClient:()=>({auth:{onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})}})},
+  });
+  let view;
+  try{
+    await act(async()=>{view=create(React.createElement(EnrollmentForm,{termsHash:'unused'}));});
+    assert.equal(requests,1);assert.equal(jsonReads,0);
+    assert.equal(view.root.findByProps({role:'alert'}).children.join(''),'Trop de demandes rapprochées. Attends une minute avant de réessayer.');
+  }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
+});
