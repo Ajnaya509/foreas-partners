@@ -8,17 +8,55 @@ import {EnrollmentFrame} from './EnrollmentFrame';
 import {StripeOnboarding} from './StripeOnboarding';
 import {trackPartnerEvent} from '@/lib/partner-measurement';
 
+async function readReply(response:Response){
+  // The firewall can return plain text. Never expose its body or a JSON parser error.
+  if(response.status===429)throw new Error('Trop de demandes rapprochées. Attends une minute avant de réessayer.');
+  let data;
+  try{data=await response.json();}catch{throw new Error('La réponse n’a pas abouti. Réessaie dans un instant.');}
+  if(!response.ok)throw new Error(typeof data?.error==='string'?data.error:'Ta demande n’a pas abouti.');
+  return data;
+}
+
 export function EnrollmentForm({termsHash}:{termsHash:string}){
   const [state,setState]=useState<EnrollmentState|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const [mode,setMode]=useState<'email'|'password'>('email'),[email,setEmail]=useState(''),[password,setPassword]=useState('');
   const [sent,setSent]=useState(false),[name,setName]=useState(''),[profile,setProfile]=useState('driver'),[accepted,setAccepted]=useState(false);
   const [newPassword,setNewPassword]=useState(''),[passwordSaved,setPasswordSaved]=useState(false),[passwordOpen,setPasswordOpen]=useState(false);
   const [stripePublishableKey,setStripePublishableKey]=useState('');
-  const refresh=useCallback(async()=>{try{const r=await fetch('/api/partner-enrollment',{cache:'no-store'});const data=await r.json();if(!r.ok)throw new Error(data.error);setState(data);setName(n=>n||data.name||'');setError('');return data as EnrollmentState;}catch(e){setError(e instanceof Error?e.message:'Ton inscription ne peut pas être chargée.');setState({signedIn:false});return null;}},[]);
-  useEffect(()=>{void refresh();const auth=createClient();const {data}=auth.auth.onAuthStateChange(()=>{window.setTimeout(()=>void refresh(),0);});return()=>data.subscription.unsubscribe();},[refresh]);
+  const pendingRefresh=useRef<Promise<EnrollmentState|null>|null>(null);
+  const refresh=useCallback(()=>{
+    if(pendingRefresh.current)return pendingRefresh.current;
+    const request=(async()=>{try{const r=await fetch('/api/partner-enrollment',{cache:'no-store'});const data=await readReply(r);setState(data);setName(n=>n||data.name||'');setError('');return data as EnrollmentState;}catch(e){setError(e instanceof Error?e.message:'Ton inscription ne peut pas être chargée.');setState({signedIn:false});return null;}})();
+    pendingRefresh.current=request;
+    void request.finally(()=>{if(pendingRefresh.current===request)pendingRefresh.current=null;});
+    return request;
+  },[]);
+  useEffect(()=>{
+    void refresh();
+    const auth=createClient();
+    let userId:string|null|undefined;
+    let scheduled:number|undefined;
+    const {data}=auth.auth.onAuthStateChange((event,session)=>{
+      const nextUserId=session?.user.id||null;
+      if(event==='INITIAL_SESSION'){userId=nextUserId;return;}
+      if(event==='SIGNED_OUT'){
+        if(userId===null)return;
+        userId=null;
+        if(scheduled!==undefined){window.clearTimeout(scheduled);scheduled=undefined;}
+        setState(previous=>previous?.signedIn===false?previous:{signedIn:false});
+        setName('');setStripePublishableKey('');
+        return;
+      }
+      // Repeated SIGNED_IN, refresh and tab-focus events are not new enrollments.
+      if(event!=='SIGNED_IN'||!nextUserId||nextUserId===userId)return;
+      userId=nextUserId;
+      if(scheduled===undefined)scheduled=window.setTimeout(()=>{scheduled=undefined;void refresh();},0);
+    });
+    return()=>{if(scheduled!==undefined)window.clearTimeout(scheduled);data.subscription.unsubscribe();};
+  },[refresh]);
   async function action(type:string,body:Record<string,unknown>={}){
     setBusy(true);setError('');
-    try{const r=await fetch('/api/partner-enrollment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type,...(type==='email'?{}:{userId:state?.userId}),...body})});const data=await r.json();if(!r.ok)throw new Error(data.error);void trackPartnerEvent('partner_step_completed',{step:type});if(data.ready)void trackPartnerEvent('partner_space_ready');if(data.embedded&&typeof data.publishableKey==='string'){setStripePublishableKey(data.publishableKey);return;}if(data.url){window.location.assign(data.url);return;}if(data.sent)setSent(true);else setState(data);}
+    try{const r=await fetch('/api/partner-enrollment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type,...(type==='email'?{}:{userId:state?.userId}),...body})});const data=await readReply(r);void trackPartnerEvent('partner_step_completed',{step:type});if(data.ready)void trackPartnerEvent('partner_space_ready');if(data.embedded&&typeof data.publishableKey==='string'){setStripePublishableKey(data.publishableKey);return;}if(data.url){window.location.assign(data.url);return;}if(data.sent)setSent(true);else setState(data);}
     catch(e){void trackPartnerEvent('partner_step_failed',{step:type});setError(e instanceof Error?e.message:'Ta demande n’a pas abouti.');}finally{setBusy(false);}
   }
   const stripeReturned=useRef(false);
