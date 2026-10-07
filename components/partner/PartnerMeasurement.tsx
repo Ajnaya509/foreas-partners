@@ -72,11 +72,11 @@ export function PartnerMeasurement() {
 
   if (!partnerSurface || choice === 'loading' || (choice !== null && !open)) return null;
   return <aside className="partner-measurement" aria-label="Préférences de confidentialité">
-    <strong>Comprendre ce qui vous aide.</strong>
-    <p>Avec votre accord, FOREAS utilise PostHog pour compter les visites et revoir les parcours. Les champs, textes et images sont masqués. Vous pouvez changer d’avis à tout moment. <a href="https://www.foreas.xyz/confidentialite">Confidentialité</a></p>
+    <strong>Un parcours plus simple, avec toi.</strong>
+    <p>Aide-nous à repérer ce qui te ralentit. Avec ton accord, PostHog mesure les visites et enregistre la navigation. Les champs, textes et images sont masqués. Tu peux changer d’avis à tout moment. <a href="https://www.foreas.xyz/confidentialite">Confidentialité</a></p>
     <div className="partner-measurement-actions">
-      <button type="button" onClick={() => decide('no')}>Continuer sans mesure</button>
-      <button type="button" onClick={() => decide('yes')}>Autoriser</button>
+      <button type="button" onClick={() => decide('no')}>Continuer sans analyse</button>
+      <button type="button" onClick={() => decide('yes')}>Autoriser l’analyse</button>
     </div>
   </aside>;
 }
