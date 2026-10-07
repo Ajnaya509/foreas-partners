@@ -1,5 +1,5 @@
 import {after,NextRequest,NextResponse} from 'next/server';
-import {settings,currentUser,getState,limit,register,rpc,termsHash,connect,connectSession,connectHosted,refreshConnect} from '@/lib/partner-enrollment/server';
+import {settings,currentUser,getState,limit,register,rpc,termsHash,connect,connectSession,connectHosted,refreshConnect,activateSharing} from '@/lib/partner-enrollment/server';
 import {sendSignIn,deliverEnrollmentMail,mailSettings} from '@/lib/partner-enrollment/mail';
 import {ENROLLMENT_POLICY,enrollmentError} from '@/lib/partner-enrollment/policy';
 export const runtime='nodejs';
@@ -32,9 +32,11 @@ export async function POST(request:NextRequest){
     if(body.action==='accept'&&keys==='accepted,action,hash,userId,version'){
       if(body.accepted!==true||body.version!==ENROLLMENT_POLICY||body.hash!==termsHash())throw new Error('TERMS_CHANGED');
       await rpc('partner_enrollment_accept',{p_user:user.id,p_version:ENROLLMENT_POLICY,p_hash:termsHash()});
-      return NextResponse.json(await getState(user),{headers});
+      const state=await activateSharing(user);mailLater(user.id);
+      return NextResponse.json(state,{headers});
     }
     if(keys!=='action,userId')throw new Error('INVALID_REQUEST');
+    if(body.action==='activate'){const state=await activateSharing(user);mailLater(user.id);return NextResponse.json(state,{headers});}
     if(body.action==='connect')return NextResponse.json(await connect(user),{headers});
     if(body.action==='session')return NextResponse.json(await connectSession(user),{headers});
     if(body.action==='hosted')return NextResponse.json(await connectHosted(user),{headers});
