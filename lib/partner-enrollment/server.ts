@@ -56,9 +56,10 @@ export async function getState(user:User|null):Promise<EnrollmentState>{
   }
   const {data:p,error}=await adminDb().from('partners').select('referral_code,status').eq('id',e.partner_id).eq('user_id',user.id).single();
   if(error||!p)throw new Error('SERVICE_UNAVAILABLE');
-  const ready=e.status==='ready'&&p.status==='active'&&e.connect_state==='ready';
+  const ready=e.status==='ready'&&p.status==='active'&&!!e.accepted_at&&!!p.referral_code;
+  const payoutsReady=ready&&e.connect_state==='ready';
   const finance=await rpc('partner_enrollment_finance',{p_user:user.id});
-  return {signedIn:true,userId:user.id,email:user.email,name:e.name,ready,
+  return {signedIn:true,userId:user.id,email:user.email,name:e.name,ready,payoutsReady,
     finance,
     enrollment:{partner_id:e.partner_id,name:e.name,profile:e.profile,country:e.country,status:e.status,terms_version:e.terms_version,accepted_at:e.accepted_at,connect_state:e.connect_state,connect_checked_at:e.connect_checked_at,connect_error:e.connect_error},
     code:ready?p.referral_code:null,link:ready&&p.referral_code?`https://www.foreas.xyz/r/${encodeURIComponent(p.referral_code)}`:null};
@@ -67,6 +68,15 @@ export async function register(user:User,body:Record<string,unknown>){
   const name=typeof body.name==='string'?body.name.trim():'';
   if(name.length<2||name.length>120||!PROFILES.some(([v])=>v===body.profile)||body.country!=='FR')throw new Error('PROFILE_INVALID');
   return rpc('partner_enrollment_register',{p_user:user.id,p_email:user.email,p_name:name,p_profile:body.profile,p_country:'FR',p_mode:settings().mode});
+}
+/** Opens sharing after an agreement already recorded by the account owner.
+ * This does not verify Stripe or trigger a financial operation. */
+export async function activateSharing(user:User){
+  if(process.env.PARTNER_ENROLLMENT_REFERRAL_READY!=='true')throw new Error('SERVICE_UNAVAILABLE');
+  const e=await enrollment(user.id);
+  if(!e?.accepted_at||e.terms_version!==ENROLLMENT_POLICY||e.status==='paused')throw new Error('CONDITIONS_REQUIRED');
+  await rpc('partner_enrollment_activate',{p_user:user.id});
+  return getState(user);
 }
 function stripeKey(){
   const {mode}=settings();const key=process.env.STRIPE_SECRET_KEY||process.env.STRIPE_SECRET_KEY_LIVE||'';
@@ -104,7 +114,7 @@ export async function refreshConnect(user:User){
   await rpc('partner_enrollment_connect_save',{p_user:user.id,p_operation:e.connect_operation,p_account:account.id,p_state:state,p_error:null});
   // Opening a link requires the real site's attribution path to be deployed too.
   // No transfer route exists in this package, regardless of this setting.
-  if(state==='ready'&&process.env.PARTNER_ENROLLMENT_REFERRAL_READY==='true')await rpc('partner_enrollment_activate',{p_user:user.id});
+  if(process.env.PARTNER_ENROLLMENT_REFERRAL_READY==='true')await rpc('partner_enrollment_activate',{p_user:user.id});
   return getState(user);
 }
 export async function connect(user:User){

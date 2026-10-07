@@ -42,7 +42,7 @@ async function mailFor(userId:string,kind:'owner'|'welcome'):Promise<Mail>{
   if(kind==='owner')return brandedMail(mailSettings().owner,'Nouvelle inscription partenaire FOREAS','Un partenaire rejoint FOREAS.',[
     `Prénom ou nom : ${e.name}`,`Activité : ${e.profile}`,`Compte : ${data.user.email}`,
     `Inscription : ${new Date(e.created_at).toLocaleDateString('fr-FR')}`,`Référence : ${e.partner_id}`,
-    'Son accès s’active à la fin du parcours, après acceptation des conditions et vérification Stripe. Cette notification ne déclenche aucun versement.',
+    'Son lien de partage devient disponible après acceptation des conditions FOREAS. Stripe doit être configuré et vérifié avant les versements. Cette notification ne déclenche aucun versement.',
   ]);
   const {data:p,error:pError}=await adminDb().from('partners').select('referral_code,status').eq('id',e.partner_id).eq('user_id',userId).single();
   if(pError||!p?.referral_code||p.status!=='active'||e.status!=='ready')throw new Error('SERVICE_UNAVAILABLE');
@@ -51,6 +51,7 @@ async function mailFor(userId:string,kind:'owner'|'welcome'):Promise<Mail>{
     `Ton identifiant : ${data.user.email}`,`Ton code partenaire : ${p.referral_code}`,
     `Ton lien personnel : https://www.foreas.xyz/r/${encodeURIComponent(p.referral_code)}`,
     'Tu retrouves ton lien, les supports disponibles et l’aide dans ton espace. Le même compte te permet de te connecter dans l’application FOREAS.',
+    'Tu peux partager ton lien dès maintenant. Configure tes versements dans ton espace : ton identité et tes coordonnées bancaires sont vérifiées directement par Stripe avant tout versement.',
     'Ta commission mensuelle est de 10 € par mois payé admissible. Aucun versement mensuel ne part avant le paiement confirmé du deuxième mois du chauffeur.',
     'Tu peux arrêter de participer à tout moment. Ton mot de passe reste personnel et ne sera jamais envoyé par email.',
   ],{label:'Ouvrir mon espace',url:settings().origin+'/partner'});

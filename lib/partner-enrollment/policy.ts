@@ -41,7 +41,7 @@ export type Enrollment = {
 export type EnrollmentState = {
   signedIn: boolean; email?: string; userId?: string; legacy?: boolean; name?: string;
   enrollment?: Pick<Enrollment, 'partner_id' | 'name' | 'profile' | 'country' | 'status' | 'terms_version' | 'accepted_at' | 'connect_state' | 'connect_checked_at' | 'connect_error'>;
-  code?: string | null; link?: string | null; error?: string; ready?: boolean;
+  code?: string | null; link?: string | null; error?: string; ready?: boolean; payoutsReady?: boolean;
   finance?: {conditional: number; eligible: number; blocked: number; referrals: number; observedAt: string; items: {id: string; kind: 'monthly'|'annual'; amount_cents: number; state: 'conditional'|'eligible'|'blocked'; created_at: string}[]};
 };
 export const enrollmentError = (code: string) => ({

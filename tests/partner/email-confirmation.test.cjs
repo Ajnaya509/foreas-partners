@@ -97,6 +97,42 @@ test('a partner opens the Stripe form inside FOREAS and can return without losin
     assert.equal(view.root.findAllByProps({className:'stripe-test'}).length,0);
   }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
 });
+test('sharing opens before payouts and survives exiting embedded Stripe',async()=>{
+  const original={window:global.window,fetch:global.fetch};const requests=[];
+  let state={signedIn:true,userId:'partner-1',email:'partner@example.test',ready:false,payoutsReady:false,enrollment:{accepted_at:'2026-09-29',connect_state:'incomplete',connect_error:null}};
+  global.window={setTimeout,location:{search:'',assign:()=>assert.fail('Stripe should stay inside FOREAS')}};
+  global.fetch=async(_url,options)=>{
+    if(options?.method==='POST'){
+      const body=JSON.parse(options.body);requests.push(body);
+      if(body.action==='activate')state={...state,ready:true,code:'FEEXAMPLE'};
+      if(body.action==='connect')return {ok:true,json:async()=>({embedded:true,publishableKey:'pk_test_example'})};
+    }
+    return {ok:true,json:async()=>state};
+  };
+  const {EnrollmentForm}=component('components/partner-enrollment/EnrollmentForm.tsx',{
+    ...mocks,
+    './StripeOnboarding':{StripeOnboarding:({onExit})=>React.createElement('div',{className:'stripe-test'},React.createElement('button',{onClick:onExit},'Terminer plus tard'))},
+    '@/lib/partner-enrollment/policy':{PROFILES:[],TERMS:'',ENROLLMENT_POLICY:'test'},
+    '@/lib/supabase/client':{createClient:()=>({auth:{onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})}})},
+  });
+  let view;
+  try{
+    await act(async()=>{view=create(React.createElement(EnrollmentForm,{termsHash:'unused'}));});
+    await act(async()=>{await view.root.findAllByType('button').find(item=>item.children.includes('Accéder à mon espace')).props.onClick();});
+    assert.equal(requests[0].action,'activate');
+    assert.ok(view.root.findAllByType('a').some(item=>item.props.href==='/partner'));
+    assert.ok(view.root.findAllByType('strong').some(item=>item.children.includes('Tes versements restent à préparer.')));
+    assert.equal(view.root.findAllByType('li')[2].props.className,'is-current','Stripe must not be falsely marked complete');
+    await act(async()=>{await view.root.findAllByType('button').find(item=>item.children.includes('Configurer mes versements')).props.onClick();});
+    assert.equal(requests[1].action,'connect');
+    assert.equal(view.root.findAllByProps({className:'stripe-test'}).length,1);
+    await act(async()=>{view.root.findAllByType('button').find(item=>item.children.includes('Terminer plus tard')).props.onClick();});
+    assert.equal(requests[2].action,'refresh');
+    assert.equal(view.root.findAllByProps({className:'stripe-test'}).length,0);
+    assert.ok(view.root.findAllByType('a').some(item=>item.props.href==='/partner'));
+    assert.equal(state.payoutsReady,false);
+  }finally{if(view)await act(async()=>view.unmount());Object.assign(global,original);}
+});
 test('repeated auth notifications cannot create an enrollment request loop',async()=>{
   const original={window:global.window,fetch:global.fetch};let requests=0,notify;const timers=new Map();let nextTimer=0;
   global.window={setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer;},clearTimeout:id=>timers.delete(id),location:{search:''}};
